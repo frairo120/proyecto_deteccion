@@ -1,0 +1,1092 @@
+<!-- templates/capacitacion/gestionar_evaluacion.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}SD-EPP | Gestión de Evaluación: {{ capacitacion.titulo }}{% endblock %}
+
+{% block content %}
+<div class="gestion-evaluacion-container">
+    <!-- Header -->
+    <div class="evaluacion-header">
+        <div class="header-content">
+            <nav class="breadcrumb">
+                <a href="{% url 'deteccion:lista_capacitaciones_admin' %}">Capacitaciones</a>
+                <span class="separator">/</span>
+                <a href="{% url 'deteccion:editar_capacitacion' capacitacion.id %}">{{ capacitacion.titulo|truncatewords:3 }}</a>
+                <span class="separator">/</span>
+                <span class="current">Gestión de Evaluación</span>
+            </nav>
+            
+            <h1>
+                <i class="fas fa-tasks"></i>
+                {% if evaluacion %}Editar Evaluación{% else %}Crear Evaluación{% endif %}
+            </h1>
+            <p class="subtitle">Para la capacitación: <strong>"{{ capacitacion.titulo }}"</strong></p>
+        </div>
+        
+        <div class="header-actions">
+            <a href="{% url 'deteccion:editar_capacitacion' capacitacion.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver a Capacitación
+            </a>
+            {% if evaluacion %}
+            <a href="{% url 'deteccion:gestionar_preguntas' evaluacion.id %}" class="btn btn-primary">
+                <i class="fas fa-question-circle"></i> Gestionar Preguntas
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Información de la Capacitación -->
+    <div class="capacitacion-info-card">
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Tipo de Contenido:</label>
+                <span class="badge tipo-{{ capacitacion.tipo_contenido }}">
+                    <i class="fas 
+                        {% if capacitacion.tipo_contenido == 'video' %}fa-video
+                        {% elif capacitacion.tipo_contenido == 'pdf' %}fa-file-pdf
+                        {% elif capacitacion.tipo_contenido == 'imagen' %}fa-image
+                        {% else %}fa-file-alt{% endif %}">
+                    </i>
+                    {{ capacitacion.get_tipo_contenido_display }}
+                </span>
+            </div>
+            <div class="info-item">
+                <label>Duración:</label>
+                <span>{{ capacitacion.duracion_minutos }} minutos</span>
+            </div>
+            <div class="info-item">
+                <label>Puntaje Mínimo:</label>
+                <span class="puntaje-minimo">{{ capacitacion.puntaje_minimo }} puntos</span>
+            </div>
+            <div class="info-item">
+                <label>Intentos Permitidos:</label>
+                <span>{{ capacitacion.intentos_permitidos }} intentos</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="evaluacion-content">
+        <!-- Formulario de Evaluación -->
+        <div class="form-section">
+            <div class="section-header">
+                <h2><i class="fas fa-cog"></i> Configuración de la Evaluación</h2>
+                {% if evaluacion %}
+                <div class="estado-evaluacion">
+                    <span class="estado-badge {% if evaluacion.activa %}activa{% else %}inactiva{% endif %}">
+                        <i class="fas {% if evaluacion.activa %}fa-check-circle{% else %}fa-pause-circle{% endif %}"></i>
+                        {% if evaluacion.activa %}Activa{% else %}Inactiva{% endif %}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+
+            <form method="post" class="evaluacion-form" id="evaluacionForm">
+                {% csrf_token %}
+                
+                <!-- Mensajes de error generales -->
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="{{ form.titulo.id_for_label }}" class="form-label">
+                            {{ form.titulo.label }} *
+                        </label>
+                        {{ form.titulo }}
+                        <div class="form-help">Título descriptivo para la evaluación</div>
+                        {% if form.titulo.errors %}
+                        <div class="error-list">
+                            {% for error in form.titulo.errors %}
+                                <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="{{ form.descripcion.id_for_label }}" class="form-label">
+                            {{ form.descripcion.label }}
+                        </label>
+                        {{ form.descripcion }}
+                        <div class="form-help">Descripción opcional de la evaluación (se mostrará a los trabajadores)</div>
+                        {% if form.descripcion.errors %}
+                        <div class="error-list">
+                            {% for error in form.descripcion.errors %}
+                                <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if evaluacion %}
+                    <div class="form-group">
+                        <label for="{{ form.activa.id_for_label }}" class="form-label checkbox-label">
+                            {{ form.activa }}
+                            <span class="checkmark"></span>
+                            {{ form.activa.label }}
+                        </label>
+                        <div class="form-help">Desactivar para ocultar la evaluación temporalmente</div>
+                        {% if form.activa.errors %}
+                        <div class="error-list">
+                            {% for error in form.activa.errors %}
+                                <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary btn-large">
+                        <i class="fas fa-save"></i>
+                        {% if evaluacion %}Actualizar Evaluación{% else %}Crear Evaluación{% endif %}
+                    </button>
+                    
+                    {% if evaluacion %}
+                    <a href="{% url 'deteccion:gestionar_preguntas' evaluacion.id %}" class="btn btn-success">
+                        <i class="fas fa-question-circle"></i> Gestionar Preguntas
+                    </a>
+                    {% endif %}
+                    
+                    <a href="{% url 'deteccion:editar_capacitacion' capacitacion.id %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Información y Estadísticas -->
+        <div class="info-sidebar">
+            {% if evaluacion %}
+            <!-- Estadísticas de la Evaluación -->
+            <div class="stats-card">
+                <h3><i class="fas fa-chart-bar"></i> Estadísticas</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon preguntas">
+                            <i class="fas fa-question"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">{{ evaluacion.preguntas.count }}</div>
+                            <div class="stat-label">Preguntas</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon puntaje-total">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">{{ evaluacion.preguntas.all|length|default:0 }}</div>
+                            <div class="stat-label">Puntaje Total</div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if evaluacion.preguntas.count > 0 %}
+                <div class="preguntas-preview">
+                    <h4>Vista Previa de Preguntas</h4>
+                    <div class="preguntas-list">
+                        {% for pregunta in evaluacion.preguntas.all|slice:":3" %}
+                        <div class="pregunta-preview">
+                            <div class="pregunta-header">
+                                <span class="pregunta-numero">#{{ forloop.counter }}</span>
+                                <span class="pregunta-puntaje">{{ pregunta.puntaje }} pts</span>
+                            </div>
+                            <p class="pregunta-texto">{{ pregunta.texto|truncatewords:8 }}</p>
+                            <div class="pregunta-meta">
+                                <span class="tipo-pregunta">{{ pregunta.get_tipo_display }}</span>
+                                <span class="opciones-count">{{ pregunta.opciones.count }} opciones</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        {% if evaluacion.preguntas.count > 3 %}
+                        <div class="mas-preguntas">
+                            <i class="fas fa-ellipsis-h"></i>
+                            Y {{ evaluacion.preguntas.count|add:"-3" }} preguntas más...
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Guía Rápida -->
+            <div class="guide-card">
+                <h3><i class="fas fa-lightbulb"></i> Guía Rápida</h3>
+                <div class="guide-steps">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <strong>Configura la evaluación</strong>
+                            <p>Define título y descripción</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <strong>Agrega preguntas</strong>
+                            <p>Mínimo 5 preguntas recomendadas</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <strong>Configura opciones</strong>
+                            <p>Marca las respuestas correctas</p>
+                        </div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <strong>Activa la evaluación</strong>
+                            <p>Los trabajadores podrán acceder</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recomendaciones -->
+            <div class="tips-card">
+                <h3><i class="fas fa-magic"></i> Recomendaciones</h3>
+                <ul class="tips-list">
+                    <li>
+                        <i class="fas fa-check-circle text-success"></i>
+                        <span>Incluye preguntas de diferentes niveles de dificultad</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle text-success"></i>
+                        <span>Usa entre 3 y 5 opciones por pregunta</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle text-success"></i>
+                        <span>Evita preguntas ambiguas o con doble significado</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-check-circle text-success"></i>
+                        <span>Revisa que todas las preguntas tengan una respuesta correcta marcada</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Avanzadas -->
+    {% if evaluacion %}
+    <div class="advanced-actions">
+        <div class="section-header">
+            <h2><i class="fas fa-cogs"></i> Acciones Avanzadas</h2>
+        </div>
+        
+        <div class="actions-grid">
+            <div class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-copy"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Duplicar Evaluación</h4>
+                    <p>Crea una copia de esta evaluación con todas sus preguntas</p>
+                </div>
+                <button class="btn btn-outline-primary" onclick="duplicarEvaluacion()">
+                    <i class="fas fa-copy"></i> Duplicar
+                </button>
+            </div>
+            
+            <div class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-download"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Exportar Preguntas</h4>
+                    <p>Descarga las preguntas en formato CSV para backup</p>
+                </div>
+                <button class="btn btn-outline-secondary" onclick="exportarPreguntas()">
+                    <i class="fas fa-download"></i> Exportar
+                </button>
+            </div>
+            
+            <div class="action-card">
+                <div class="action-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Ver Estadísticas</h4>
+                    <p>Consulta el rendimiento de los trabajadores en esta evaluación</p>
+                </div>
+                <a href="{% url 'deteccion:reporte_capacitacion_detalle' capacitacion.id %}" class="btn btn-outline-info">
+                    <i class="fas fa-chart-line"></i> Ver Reporte
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.gestion-evaluacion-container {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Header */
+.evaluacion-header {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9em;
+    margin-bottom: 15px;
+}
+
+.breadcrumb a {
+    color: white;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb .separator {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.breadcrumb .current {
+    color: white;
+    font-weight: 500;
+}
+
+.header-content h1 {
+    margin: 0 0 5px 0;
+    font-size: 2em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.subtitle {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1.1em;
+}
+
+.header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 200px;
+}
+
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    color: white;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    justify-content: center;
+    font-size: 0.9em;
+}
+
+.btn-primary { background: #27ae60; }
+.btn-secondary { background: #6c757d; }
+.btn-success { background: #28a745; }
+.btn-info { background: #17a2b8; }
+.btn-outline-primary { 
+    background: transparent; 
+    border: 1px solid #3498db; 
+    color: #3498db; 
+}
+.btn-outline-secondary { 
+    background: transparent; 
+    border: 1px solid #6c757d; 
+    color: #6c757d; 
+}
+.btn-outline-info { 
+    background: transparent; 
+    border: 1px solid #17a2b8; 
+    color: #17a2b8; 
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-large {
+    padding: 14px 28px;
+    font-size: 1em;
+}
+
+.btn-sm {
+    padding: 8px 15px;
+    font-size: 0.8em;
+}
+
+/* Información de la Capacitación */
+.capacitacion-info-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.info-item span {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    width: fit-content;
+}
+
+.tipo-texto { background: #e8f4fd; color: #3498db; }
+.tipo-pdf { background: #fdedec; color: #e74c3c; }
+.tipo-imagen { background: #fef9e7; color: #f39c12; }
+.tipo-video { background: #e8f6f3; color: #16a085; }
+
+.puntaje-minimo {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+/* Contenido Principal */
+.evaluacion-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+/* Formulario */
+.form-section {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.section-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3em;
+}
+
+.estado-badge {
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.estado-badge.activa { background: #d4edda; color: #155724; }
+.estado-badge.inactiva { background: #fff3cd; color: #856404; }
+
+.form-grid {
+    display: grid;
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background: #3498db;
+    border-color: #3498db;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Campos de formulario */
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: white;
+    font-family: inherit;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.form-help {
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.error-list {
+    margin-top: 5px;
+}
+
+.error {
+    color: #e74c3c;
+    font-size: 0.8em;
+    display: block;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+    flex-wrap: wrap;
+}
+
+/* Sidebar */
+.info-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.stats-card,
+.guide-card,
+.tips-card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.stats-card h3,
+.guide-card h3,
+.tips-card h3 {
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1em;
+}
+
+.stats-grid {
+    display: grid;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2em;
+    color: white;
+}
+
+.stat-icon.preguntas { background: #3498db; }
+.stat-icon.puntaje-total { background: #27ae60; }
+
+.stat-number {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.preguntas-preview h4 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1em;
+}
+
+.preguntas-list {
+    display: grid;
+    gap: 10px;
+}
+
+.pregunta-preview {
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #3498db;
+}
+
+.pregunta-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.pregunta-numero {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9em;
+}
+
+.pregunta-puntaje {
+    background: #e74c3c;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7em;
+    font-weight: 600;
+}
+
+.pregunta-texto {
+    margin: 0 0 8px 0;
+    color: #2c3e50;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.pregunta-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+.mas-preguntas {
+    text-align: center;
+    padding: 10px;
+    color: #6c757d;
+    font-style: italic;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+/* Guía */
+.guide-steps {
+    display: grid;
+    gap: 15px;
+}
+
+.step {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.step-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #3498db;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9em;
+    flex-shrink: 0;
+}
+
+.step-content strong {
+    display: block;
+    color: #2c3e50;
+    margin-bottom: 2px;
+}
+
+.step-content p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+/* Tips */
+.tips-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tips-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.tips-list li:last-child {
+    border-bottom: none;
+}
+
+.tips-list i {
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.tips-list span {
+    color: #2c3e50;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+/* Acciones Avanzadas */
+.advanced-actions {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.action-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #3498db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    color: white;
+    flex-shrink: 0;
+}
+
+.action-content {
+    flex: 1;
+}
+
+.action-content h4 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+}
+
+.action-content p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .evaluacion-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .gestion-evaluacion-container {
+        padding: 10px;
+    }
+    
+    .evaluacion-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .header-actions {
+        min-width: auto;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-section {
+        padding: 20px;
+    }
+    
+    .stats-card,
+    .guide-card,
+    .tips-card {
+        padding: 20px;
+    }
+    
+    .step {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('evaluacionForm');
+    
+    // Validación del formulario
+    form.addEventListener('submit', function(e) {
+        const titulo = document.getElementById('{{ form.titulo.id_for_label }}').value.trim();
+        let esValido = true;
+        
+        if (!titulo) {
+            mostrarError('{{ form.titulo.id_for_label }}', 'El título es requerido');
+            esValido = false;
+        } else if (titulo.length < 5) {
+            mostrarError('{{ form.titulo.id_for_label }}', 'El título debe tener al menos 5 caracteres');
+            esValido = false;
+        }
+        
+        if (!esValido) {
+            e.preventDefault();
+            // Scroll al primer error
+            const primerError = document.querySelector('.error');
+            if (primerError) {
+                primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+    
+    function mostrarError(campoId, mensaje) {
+        const campo = document.getElementById(campoId);
+        const errorAnterior = campo.parentNode.querySelector('.error-campo');
+        
+        if (errorAnterior) {
+            errorAnterior.remove();
+        }
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error error-campo';
+        errorDiv.textContent = mensaje;
+        campo.parentNode.appendChild(errorDiv);
+        
+        campo.style.borderColor = '#e74c3c';
+    }
+    
+    // Limpiar errores al escribir
+    const campos = form.querySelectorAll('input, textarea');
+    campos.forEach(campo => {
+        campo.addEventListener('input', function() {
+            const error = this.parentNode.querySelector('.error-campo');
+            if (error) {
+                error.remove();
+                this.style.borderColor = '#ddd';
+            }
+        });
+    });
+    
+    // Funciones para acciones avanzadas
+    window.duplicarEvaluacion = function() {
+        if (confirm('¿Estás seguro de que quieres duplicar esta evaluación? Se crearán copias de todas las preguntas.')) {
+            // Aquí implementarías la lógica real de duplicación
+            alert('Funcionalidad de duplicación en desarrollo');
+        }
+    };
+    
+    window.exportarPreguntas = function() {
+        // Aquí implementarías la lógica real de exportación
+        alert('Funcionalidad de exportación en desarrollo');
+    };
+    
+    // Contador de caracteres para descripción
+    const descripcion = document.getElementById('{{ form.descripcion.id_for_label }}');
+    if (descripcion) {
+        const contador = document.createElement('div');
+        contador.className = 'form-help';
+        contador.style.marginTop = '5px';
+        contador.innerHTML = '<span id="contador-caracteres">0</span>/500 caracteres';
+        descripcion.parentNode.appendChild(contador);
+        
+        descripcion.addEventListener('input', function() {
+            const contadorElement = document.getElementById('contador-caracteres');
+            contadorElement.textContent = this.value.length;
+            
+            if (this.value.length > 500) {
+                contadorElement.style.color = '#e74c3c';
+            } else if (this.value.length > 400) {
+                contadorElement.style.color = '#f39c12';
+            } else {
+                contadorElement.style.color = '#27ae60';
+            }
+        });
+        
+        // Inicializar contador
+        descripcion.dispatchEvent(new Event('input'));
+    }
+    
+    // Efectos visuales
+    const cards = document.querySelectorAll('.stats-card, .guide-card, .tips-card, .action-card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.transition = 'all 0.3s ease';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+</script>
+{% endblock %}

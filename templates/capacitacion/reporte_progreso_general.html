@@ -1,0 +1,1142 @@
+<!-- templates/capacitacion/reporte_progreso_general.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}SD-EPP | Reporte de Progreso General{% endblock %}
+
+{% block content %}
+<div class="reporte-progreso-container">
+    <!-- Header del Reporte -->
+    <div class="reporte-header">
+        <div class="header-content">
+            <h1><i class="fas fa-chart-line"></i> Reporte de Progreso General</h1>
+            <p>Progreso de todos los trabajadores en las capacitaciones</p>
+            
+            <div class="header-stats">
+                <div class="stat-item">
+                    <div class="stat-number">{{ total_trabajadores }}</div>
+                    <div class="stat-label">Total Trabajadores</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ trabajadores_cumpliendo }}</div>
+                    <div class="stat-label">Cumpliendo</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ trabajadores_riesgo }}</div>
+                    <div class="stat-label">En Riesgo</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ trabajadores_no_cumpliendo }}</div>
+                    <div class="stat-label">No Cumpliendo</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="header-actions">
+            <a href="{% url 'deteccion:dashboard_admin_capacitaciones' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+            <a href="{% url 'deteccion:exportar_reporte_progreso' %}" class="btn btn-primary">
+                <i class="fas fa-download"></i> Exportar CSV
+            </a>
+            <button class="btn btn-info" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+        </div>
+    </div>
+
+    <!-- Resumen Ejecutivo -->
+    <div class="resumen-ejecutivo">
+        <h3><i class="fas fa-chart-pie"></i> Resumen Ejecutivo</h3>
+        <div class="resumen-grid">
+            <div class="resumen-card">
+                <div class="resumen-icon cumpliendo">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="resumen-content">
+                    <h4>{{ trabajadores_cumpliendo }}</h4>
+                    <p>Trabajadores Cumpliendo</p>
+                    <span class="resumen-porcentaje">
+                        {% widthratio trabajadores_cumpliendo total_trabajadores 100 %}%
+                    </span>
+                </div>
+            </div>
+            <div class="resumen-card">
+                <div class="resumen-icon riesgo">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="resumen-content">
+                    <h4>{{ trabajadores_riesgo }}</h4>
+                    <p>En Riesgo</p>
+                    <span class="resumen-porcentaje">
+                        {% widthratio trabajadores_riesgo total_trabajadores 100 %}%
+                    </span>
+                </div>
+            </div>
+            <div class="resumen-card">
+                <div class="resumen-icon no-cumpliendo">
+                    <i class="fas fa-user-times"></i>
+                </div>
+                <div class="resumen-content">
+                    <h4>{{ trabajadores_no_cumpliendo }}</h4>
+                    <p>No Cumpliendo</p>
+                    <span class="resumen-porcentaje">
+                        {% widthratio trabajadores_no_cumpliendo total_trabajadores 100 %}%
+                    </span>
+                </div>
+            </div>
+            <div class="resumen-card">
+                <div class="resumen-icon promedio">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="resumen-content">
+                    <h4>
+                        {% with total=0 %}
+                            {% for dato in datos_trabajadores %}
+                                <!-- Este cálculo se haría mejor en la vista -->
+                            {% endfor %}
+                            {{ total|default:"0" }}%
+                        {% endwith %}
+                    </h4>
+                    <p>Progreso Promedio</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-section">
+        <div class="filtros-grid">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Buscar trabajador..." class="search-input">
+            </div>
+            <div class="filtros-group">
+                <select id="filtroEstado" class="filtro-select">
+                    <option value="">Todos los estados</option>
+                    <option value="cumpliendo">Cumpliendo</option>
+                    <option value="riesgo">En Riesgo</option>
+                    <option value="no-cumpliendo">No Cumpliendo</option>
+                </select>
+                <select id="filtroProgreso" class="filtro-select">
+                    <option value="">Todo el progreso</option>
+                    <option value="alto">Alto (≥80%)</option>
+                    <option value="medio">Medio (50-79%)</option>
+                    <option value="bajo">Bajo (<50%)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Progreso Detallado -->
+    <div class="tabla-progreso-detallado">
+        <div class="tabla-header">
+            <h3><i class="fas fa-users"></i> Progreso Detallado por Trabajador</h3>
+            <div class="tabla-info">
+                Mostrando {{ datos_trabajadores|length }} trabajadores
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="progreso-table" id="progresoTable">
+                <thead>
+                    <tr>
+                        <th data-sort="nombre">Trabajador <i class="fas fa-sort"></i></th>
+                        <th data-sort="progreso">Progreso General <i class="fas fa-sort"></i></th>
+                        <th data-sort="completadas">Capacitaciones <i class="fas fa-sort"></i></th>
+                        <th data-sort="evaluaciones">Evaluaciones <i class="fas fa-sort"></i></th>
+                        <th data-sort="certificados">Certificados <i class="fas fa-sort"></i></th>
+                        <th data-sort="estado">Estado <i class="fas fa-sort"></i></th>
+                        <th>Última Actividad</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dato in datos_trabajadores %}
+                    <tr class="trabajador-item" 
+                        data-nombre="{{ dato.trabajador.get_full_name|lower }}"
+                        data-progreso="{{ dato.porcentaje_progreso }}"
+                        data-estado="{{ dato.estado|lower }}"
+                        data-completadas="{{ dato.completadas }}"
+                        data-evaluaciones="{{ dato.evaluaciones_aprobadas }}"
+                        data-certificados="{{ dato.certificados.count }}">
+                        <td class="trabajador-info">
+                            <div class="avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="info-content">
+                                <h4>{{ dato.trabajador.get_full_name }}</h4>
+                                <p class="email">{{ dato.trabajador.email }}</p>
+                                <p class="departamento">
+                                    <small>
+                                        {% if dato.trabajador.empleado and dato.trabajador.empleado.cargo %}
+                                            {{ dato.trabajador.empleado.cargo.nombre }}
+                                        {% else %}
+                                            Sin cargo asignado
+                                        {% endif %}
+                                    </small>
+                                </p>
+                            </div>
+                        </td>
+                        <td class="progreso-general">
+                            <div class="progreso-info">
+                                <div class="progreso-header">
+                                    <span class="progreso-porcentaje">{{ dato.porcentaje_progreso|floatformat:1 }}%</span>
+                                    <span class="progreso-text">
+                                        {{ dato.completadas }}/{{ dato.total_capacitaciones }}
+                                    </span>
+                                </div>
+                                <div class="progreso-bar">
+                                    <div class="progreso-fill 
+                                        {% if dato.porcentaje_progreso >= 70 %}progreso-alto
+                                        {% elif dato.porcentaje_progreso >= 30 %}progreso-medio
+                                        {% else %}progreso-bajo{% endif %}" 
+                                        style="width: {{ dato.porcentaje_progreso }}%">
+                                    </div>
+                                </div>
+                                <div class="progreso-detalle">
+                                    <small>{{ dato.completadas }} completadas de {{ dato.total_capacitaciones }} totales</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="capacitaciones-info">
+                            <div class="metricas-grid">
+                                <div class="metrica">
+                                    <div class="metrica-valor">{{ dato.completadas }}</div>
+                                    <div class="metrica-label">Completadas</div>
+                                </div>
+                                <div class="metrica">
+                                    <div class="metrica-valor">{{ dato.total_capacitaciones }}</div>
+                                    <div class="metrica-label">Totales</div>
+                                </div>
+                                <div class="metrica">
+                                    <div class="metrica-valor">
+                                        {{ dato.total_capacitaciones|default:0|add:dato.completadas|default:0 }}
+                                    </div>
+                                    <div class="metrica-label">Restantes</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="evaluaciones-info">
+                            <div class="metricas-grid">
+                                <div class="metrica">
+                                    <div class="metrica-valor">{{ dato.evaluaciones_aprobadas }}</div>
+                                    <div class="metrica-label">Aprobadas</div>
+                                </div>
+                                <div class="metrica">
+                                    <div class="metrica-valor">{{ dato.total_evaluaciones }}</div>
+                                    <div class="metrica-label">Totales</div>
+                                </div>
+                                <div class="metrica">
+                                    <div class="metrica-valor 
+                                        {% if dato.evaluaciones_aprobadas == dato.total_evaluaciones %}text-success
+                                        {% elif dato.evaluaciones_aprobadas > 0 %}text-warning
+                                        {% else %}text-danger{% endif %}">
+                                        {% widthratio dato.evaluaciones_aprobadas dato.total_evaluaciones 100 %}%
+                                    </div>
+                                    <div class="metrica-label">Tasa éxito</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="certificados-info">
+                            <div class="certificados-count">
+                                <span class="certificado-badge">
+                                    <i class="fas fa-certificate"></i>
+                                    {{ dato.certificados.count }}
+                                </span>
+                            </div>
+                            {% if dato.certificados.count > 0 %}
+                            <div class="certificados-list">
+                                <small>
+                                    {% for certificado in dato.certificados|slice:":2" %}
+                                        {{ certificado.capacitacion.titulo|truncatewords:2 }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                    {% if dato.certificados.count > 2 %}
+                                        +{{ dato.certificados.count|add:"-2" }} más
+                                    {% endif %}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td class="estado-info">
+                            <span class="estado-badge estado-{{ dato.estado|lower }}">
+                                <i class="fas 
+                                    {% if dato.estado == 'Cumpliendo' %}fa-check-circle
+                                    {% elif dato.estado == 'En riesgo' %}fa-exclamation-triangle
+                                    {% else %}fa-times-circle{% endif %}">
+                                </i>
+                                {{ dato.estado }}
+                            </span>
+                        </td>
+                        <td class="ultima-actividad">
+                            {% with ultimo_progreso=dato.progresos.last %}
+                                {% if ultimo_progreso %}
+                                    <div class="actividad-info">
+                                        <div class="actividad-tipo">
+                                            {% if ultimo_progreso.completada %}
+                                                <i class="fas fa-check text-success"></i>
+                                                Completó capacitación
+                                            {% else %}
+                                                <i class="fas fa-play text-info"></i>
+                                                En progreso
+                                            {% endif %}
+                                        </div>
+                                        <div class="actividad-fecha">
+                                            <small>{{ ultimo_progreso.fecha_inicio|date:"d/m/Y" }}</small>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted">Sin actividad</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td class="acciones-trabajador">
+                            <div class="acciones-grid">
+                                <a href="{% url 'deteccion:detalle_progreso_trabajador' dato.trabajador.id %}" 
+                                   class="btn-action btn-detalle" title="Ver detalle completo">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                
+                                {% if dato.porcentaje_progreso < 50 %}
+                                <button class="btn-action btn-alerta" title="Enviar recordatorio">
+                                    <i class="fas fa-bell"></i>
+                                </button>
+                                {% endif %}
+                                
+                                <a href="mailto:{{ dato.trabajador.email }}" 
+                                   class="btn-action btn-email" title="Enviar email">
+                                    <i class="fas fa-envelope"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center no-data">
+                            <i class="fas fa-users fa-3x"></i>
+                            <h4>No hay datos de progreso</h4>
+                            <p>No se encontraron trabajadores con progreso registrado.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Análisis por Departamentos (si hay datos) -->
+    {% if datos_trabajadores %}
+    <div class="analisis-departamentos">
+        <h3><i class="fas fa-sitemap"></i> Análisis por Estado</h3>
+        <div class="analisis-grid">
+            <div class="analisis-card">
+                <h4>Distribución por Estado</h4>
+                <div class="distribucion-estados">
+                    <div class="estado-item">
+                        <div class="estado-color cumpliendo"></div>
+                        <span class="estado-nombre">Cumpliendo</span>
+                        <span class="estado-porcentaje">
+                            {{ trabajadores_cumpliendo }} ({% widthratio trabajadores_cumpliendo total_trabajadores 100 %}%)
+                        </span>
+                    </div>
+                    <div class="estado-item">
+                        <div class="estado-color riesgo"></div>
+                        <span class="estado-nombre">En Riesgo</span>
+                        <span class="estado-porcentaje">
+                            {{ trabajadores_riesgo }} ({% widthratio trabajadores_riesgo total_trabajadores 100 %}%)
+                        </span>
+                    </div>
+                    <div class="estado-item">
+                        <div class="estado-color no-cumpliendo"></div>
+                        <span class="estado-nombre">No Cumpliendo</span>
+                        <span class="estado-porcentaje">
+                            {{ trabajadores_no_cumpliendo }} ({% widthratio trabajadores_no_cumpliendo total_trabajadores 100 %}%)
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="analisis-card">
+                <h4>Recomendaciones</h4>
+                <div class="recomendaciones-list">
+                    {% if trabajadores_no_cumpliendo > 0 %}
+                    <div class="recomendacion-item">
+                        <i class="fas fa-exclamation-circle text-danger"></i>
+                        <span>{{ trabajadores_no_cumpliendo }} trabajadores necesitan atención inmediata</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if trabajadores_riesgo > 0 %}
+                    <div class="recomendacion-item">
+                        <i class="fas fa-clock text-warning"></i>
+                        <span>{{ trabajadores_riesgo }} trabajadores están en riesgo de incumplimiento</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if trabajadores_cumpliendo == total_trabajadores %}
+                    <div class="recomendacion-item">
+                        <i class="fas fa-check-circle text-success"></i>
+                        <span>¡Todos los trabajadores están cumpliendo con las capacitaciones!</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.reporte-progreso-container {
+    padding: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* Header */
+.reporte-header {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.header-content h1 {
+    margin: 0 0 10px 0;
+    font-size: 2.2em;
+}
+
+.header-content p {
+    margin: 0 0 25px 0;
+    opacity: 0.9;
+    font-size: 1.1em;
+}
+
+.header-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    max-width: 600px;
+}
+
+.stat-item {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 20px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.stat-number {
+    font-size: 2.2em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 200px;
+}
+
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    text-decoration: none;
+    color: white;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    justify-content: center;
+}
+
+.btn-primary { background: #27ae60; }
+.btn-secondary { background: #6c757d; }
+.btn-info { background: #17a2b8; }
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Resumen Ejecutivo */
+.resumen-ejecutivo {
+    margin-bottom: 30px;
+}
+
+.resumen-ejecutivo h3 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.resumen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.resumen-card {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s ease;
+}
+
+.resumen-card:hover {
+    transform: translateY(-3px);
+}
+
+.resumen-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8em;
+    color: white;
+}
+
+.resumen-icon.cumpliendo { background: #27ae60; }
+.resumen-icon.riesgo { background: #f39c12; }
+.resumen-icon.no-cumpliendo { background: #e74c3c; }
+.resumen-icon.promedio { background: #3498db; }
+
+.resumen-content h4 {
+    margin: 0;
+    font-size: 2em;
+    color: #2c3e50;
+}
+
+.resumen-content p {
+    margin: 5px 0;
+    color: #7f8c8d;
+    font-weight: 500;
+}
+
+.resumen-porcentaje {
+    font-size: 0.9em;
+    color: #27ae60;
+    font-weight: 600;
+}
+
+/* Filtros */
+.filtros-section {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 25px;
+}
+
+.filtros-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 12px 10px 40px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.filtros-group {
+    display: flex;
+    gap: 10px;
+}
+
+.filtro-select {
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    background: white;
+    min-width: 150px;
+}
+
+/* Tabla */
+.tabla-progreso-detallado {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.tabla-header {
+    padding: 25px 25px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tabla-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tabla-info {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.progreso-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.progreso-table th {
+    background: #f8f9fa;
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #2c3e50;
+    border-bottom: 2px solid #dee2e6;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.progreso-table th:hover {
+    background: #e9ecef;
+}
+
+.progreso-table th i {
+    margin-left: 5px;
+    opacity: 0.5;
+}
+
+.progreso-table td {
+    padding: 20px 12px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+.progreso-table tr:hover {
+    background: #f8f9fa;
+}
+
+/* Columnas específicas */
+.trabajador-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 200px;
+}
+
+.avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #3498db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2em;
+}
+
+.info-content h4 {
+    margin: 0 0 5px 0;
+    color: #2c3e50;
+    font-size: 1em;
+}
+
+.info-content .email {
+    margin: 0 0 3px 0;
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.info-content .departamento {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.8em;
+}
+
+.progreso-general {
+    min-width: 180px;
+}
+
+.progreso-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.progreso-porcentaje {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #2c3e50;
+}
+
+.progreso-text {
+    font-size: 0.9em;
+    color: #6c757d;
+}
+
+.progreso-bar {
+    width: 100%;
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.progreso-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.progreso-alto { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+.progreso-medio { background: linear-gradient(90deg, #f39c12, #f1c40f); }
+.progreso-bajo { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+
+.progreso-detalle small {
+    color: #6c757d;
+}
+
+.metricas-grid {
+    display: grid;
+    gap: 5px;
+}
+
+.metrica {
+    text-align: center;
+}
+
+.metrica-valor {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #2c3e50;
+}
+
+.metrica-label {
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+.certificado-badge {
+    background: #fff3cd;
+    color: #856404;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.certificados-list small {
+    color: #6c757d;
+}
+
+.estado-badge {
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.estado-cumpliendo { background: #d4edda; color: #155724; }
+.estado-en riesgo { background: #fff3cd; color: #856404; }
+.estado-no-cumpliendo { background: #f8d7da; color: #721c24; }
+
+.actividad-info {
+    text-align: center;
+}
+
+.actividad-tipo {
+    margin-bottom: 3px;
+    font-size: 0.9em;
+}
+
+.actividad-fecha {
+    color: #6c757d;
+}
+
+.acciones-grid {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+}
+
+.btn-action {
+    width: 35px;
+    height: 35px;
+    border: none;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: white;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-detalle { background: #3498db; }
+.btn-alerta { background: #f39c12; }
+.btn-email { background: #9b59b6; }
+
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Análisis */
+.analisis-departamentos {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.analisis-departamentos h3 {
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.analisis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.analisis-card {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.analisis-card h4 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+}
+
+.distribucion-estados {
+    display: grid;
+    gap: 10px;
+}
+
+.estado-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+}
+
+.estado-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.estado-color.cumpliendo { background: #27ae60; }
+.estado-color.riesgo { background: #f39c12; }
+.estado-color.no-cumpliendo { background: #e74c3c; }
+
+.estado-nombre {
+    flex: 1;
+    font-weight: 500;
+}
+
+.estado-porcentaje {
+    color: #6c757d;
+    font-size: 0.9em;
+}
+
+.recomendaciones-list {
+    display: grid;
+    gap: 10px;
+}
+
+.recomendacion-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+}
+
+.recomendacion-item i {
+    width: 16px;
+}
+
+/* Estados de texto */
+.text-success { color: #28a745; }
+.text-warning { color: #ffc107; }
+.text-danger { color: #dc3545; }
+.text-muted { color: #6c757d; }
+
+/* Estado vacío */
+.no-data {
+    padding: 60px 20px;
+    text-align: center;
+    color: #6c757d;
+}
+
+.no-data i {
+    margin-bottom: 20px;
+    color: #bdc3c7;
+}
+
+.no-data h4 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+}
+
+.text-center { text-align: center; }
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .reporte-header {
+        flex-direction: column;
+        gap: 25px;
+    }
+    
+    .header-actions {
+        flex-direction: row;
+        min-width: auto;
+    }
+    
+    .analisis-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .reporte-progreso-container {
+        padding: 10px;
+    }
+    
+    .resumen-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filtros-grid {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        max-width: none;
+    }
+    
+    .filtros-group {
+        justify-content: stretch;
+    }
+    
+    .filtro-select {
+        flex: 1;
+    }
+    
+    .tabla-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .trabajador-info {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+    
+    .acciones-grid {
+        flex-wrap: wrap;
+    }
+}
+
+@media print {
+    .header-actions,
+    .filtros-section,
+    .btn-action {
+        display: none !important;
+    }
+    
+    .reporte-header {
+        background: white !important;
+        color: black !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const filtroEstado = document.getElementById('filtroEstado');
+    const filtroProgreso = document.getElementById('filtroProgreso');
+    const progresoTable = document.getElementById('progresoTable');
+    const filas = document.querySelectorAll('.trabajador-item');
+    
+    // Filtrado
+    function filtrarTrabajadores() {
+        const texto = searchInput.value.toLowerCase();
+        const estado = filtroEstado.value;
+        const progreso = filtroProgreso.value;
+        
+        filas.forEach(fila => {
+            const nombre = fila.dataset.nombre;
+            const filaEstado = fila.dataset.estado;
+            const progresoValor = parseFloat(fila.dataset.progreso);
+            
+            const coincideTexto = nombre.includes(texto);
+            const coincideEstado = estado === '' || filaEstado === estado;
+            let coincideProgreso = true;
+            
+            if (progreso === 'alto') {
+                coincideProgreso = progresoValor >= 80;
+            } else if (progreso === 'medio') {
+                coincideProgreso = progresoValor >= 50 && progresoValor < 80;
+            } else if (progreso === 'bajo') {
+                coincideProgreso = progresoValor < 50;
+            }
+            
+            if (coincideTexto && coincideEstado && coincideProgreso) {
+                fila.style.display = '';
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+    }
+    
+    // Ordenamiento
+    function ordenarTabla(columna, direccion) {
+        const tbody = progresoTable.querySelector('tbody');
+        const filasArray = Array.from(filas);
+        
+        filasArray.sort((a, b) => {
+            let valorA = a.dataset[columna];
+            let valorB = b.dataset[columna];
+            
+            // Convertir a números si es posible
+            if (columna === 'progreso' || columna === 'completadas' || 
+                columna === 'evaluaciones' || columna === 'certificados') {
+                valorA = parseFloat(valorA);
+                valorB = parseFloat(valorB);
+            }
+            
+            if (valorA < valorB) return direccion === 'asc' ? -1 : 1;
+            if (valorA > valorB) return direccion === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        // Reordenar filas en la tabla
+        filasArray.forEach(fila => tbody.appendChild(fila));
+    }
+    
+    // Event listeners para filtros
+    searchInput.addEventListener('input', filtrarTrabajadores);
+    filtroEstado.addEventListener('change', filtrarTrabajadores);
+    filtroProgreso.addEventListener('change', filtrarTrabajadores);
+    
+    // Event listeners para ordenamiento
+    const headers = progresoTable.querySelectorAll('th[data-sort]');
+    headers.forEach(header => {
+        header.addEventListener('click', function() {
+            const columna = this.dataset.sort;
+            const direccionActual = this.dataset.direction || 'asc';
+            const nuevaDireccion = direccionActual === 'asc' ? 'desc' : 'asc';
+            
+            // Resetear otros headers
+            headers.forEach(h => {
+                if (h !== this) {
+                    h.dataset.direction = '';
+                    h.querySelector('i').className = 'fas fa-sort';
+                }
+            });
+            
+            // Actualizar current header
+            this.dataset.direction = nuevaDireccion;
+            const icon = this.querySelector('i');
+            icon.className = nuevaDireccion === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            
+            ordenarTabla(columna, nuevaDireccion);
+        });
+    });
+    
+    // Botones de alerta
+    const botonesAlerta = document.querySelectorAll('.btn-alerta');
+    botonesAlerta.forEach(boton => {
+        boton.addEventListener('click', function() {
+            const fila = this.closest('.trabajador-item');
+            const nombre = fila.querySelector('.info-content h4').textContent;
+            
+            if (confirm(`¿Enviar recordatorio a ${nombre}?`)) {
+                this.innerHTML = '<i class="fas fa-check"></i>';
+                this.style.background = '#27ae60';
+                
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-bell"></i>';
+                    this.style.background = '#f39c12';
+                }, 2000);
+            }
+        });
+    });
+    
+    // Efectos de hover
+    filas.forEach(fila => {
+        fila.addEventListener('mouseenter', function() {
+            this.style.transition = 'all 0.3s ease';
+        });
+    });
+});
+</script>
+{% endblock %}

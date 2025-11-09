@@ -1,136 +1,296 @@
-/* --- ESTILOS GENERALES DE LA TARJETA --- */
-.form-card {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
+/* Mejoras de diseño para el formulario de edición */
+
+/* Breadcrumb */
+.breadcrumb-nav {
+    margin-bottom: 1rem;
 }
 
-.form-card .card-header {
-    padding: 20px 30px;
-    border-bottom: 1px solid #f0f0f0;
-    background-color: #f8f9fa;
-}
-
-.form-card .card-header h2 {
-    margin-bottom: 5px;
-    color: #343a40;
-}
-
-.form-card .card-body {
-    padding: 30px;
-}
-
-/* --- ESTILOS PARA LA CUADRÍCULA DE CAMPOS --- */
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px 30px;
-}
-
-.form-group {
+.breadcrumb {
     display: flex;
-    flex-direction: column;
-}
-
-/* --- ESTILOS PARA SECCIONES DE ANCHO COMPLETO (Permisos y Contraseña) --- */
-.full-width-section {
-    grid-column: 1 / -1; 
-    margin-top: 25px;
-    padding-top: 25px;
-    border-top: 2px solid #e9ecef; /* Separador claro */
-}
-
-.permissions-section h3, .password-section h3 {
-    font-size: 1.3rem;
-    color: #1c3d70;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    border-left: 4px solid #4CAF50;
-    padding-left: 10px;
-}
-
-/* --- DISEÑO DE CHECKBOXES BOOLEANOS (Activo, Staff, Superusuario) --- */
-.permission-checkboxes-container {
-    display: flex;
-    gap: 30px;
-    margin-bottom: 25px;
-    padding: 15px 20px;
-    border: 1px dashed #ced4da; /* Borde suave */
-    border-radius: 8px;
-    background-color: #ffffff;
-}
-
-.form-group-checkbox {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-}
-
-.form-group-checkbox .form-check-input {
-    width: 1.2em;
-    height: 1.2em;
-    margin-right: 10px;
-}
-
-/* --- DISEÑO DE GRUPOS (Selección Múltiple) --- */
-.groups-field {
-    margin-top: 20px;
-    padding: 20px;
-    border-radius: 8px;
-    background-color: #f7f7f7;
-    border: 1px solid #eee;
-}
-
-.groups-label {
-    font-size: 1.1rem !important;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 15px !important;
-    display: flex;
-    align-items: center;
-}
-
-.groups-label i {
-    margin-right: 8px;
-    color: #4CAF50;
-}
-
-/* Lista de grupos */
-.checkbox-group-container ul {
     list-style: none;
     padding: 0;
     margin: 0;
-    display: flex;
-    flex-wrap: wrap; 
-    gap: 15px 40px; 
+    font-size: 0.9rem;
 }
 
-/* --- ESTILOS DE ACCIÓN DEL FOOTER --- */
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "/";
+    padding: 0 0.5rem;
+    color: #6c757d;
+}
+
+.breadcrumb-item a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.breadcrumb-item.active {
+    color: #6c757d;
+}
+
+/* Encabezado mejorado */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.title-section {
+    flex: 1;
+}
+
+.page-subtitle {
+    color: #6c757d;
+    margin-top: 0.25rem;
+    font-size: 1rem;
+}
+
+/* Tarjeta de información del empleado */
+.employee-info-card {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #007bff;
+}
+
+.employee-avatar {
+    margin-right: 1.5rem;
+}
+
+.avatar-img, .avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #dee2e6;
+    color: #6c757d;
+    font-size: 2rem;
+}
+
+.employee-details h2 {
+    margin: 0 0 0.25rem 0;
+    color: #343a40;
+}
+
+.employee-id {
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-badge i {
+    font-size: 0.5rem;
+    margin-right: 0.375rem;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Mejoras del formulario */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.field-wrapper {
+    position: relative;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    transition: all 0.15s ease-in-out;
+    background-color: #fff;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: 0;
+}
+
+.form-group-error .form-control {
+    border-color: #dc3545;
+}
+
+.form-group-error .form-control:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.form-group-focused .form-control {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.required-star {
+    color: #dc3545;
+    margin-left: 0.25rem;
+}
+
+.form-help-text {
+    display: block;
+    margin-top: 0.25rem;
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.form-error-text {
+    display: block;
+    margin-top: 0.25rem;
+    color: #dc3545;
+    font-size: 0.875rem;
+}
+
+.form-error-text i {
+    margin-right: 0.25rem;
+}
+
+/* Vista previa de archivos */
+.file-upload-preview {
+    margin-top: 0.75rem;
+    text-align: center;
+}
+
+.file-upload-preview img {
+    max-width: 150px;
+    max-height: 150px;
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+}
+
+/* Botones mejorados */
+.btn-secondary-header, .btn-secondary-cancel, .btn-primary-submit {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-secondary-header i, .btn-secondary-cancel i, .btn-primary-submit i {
+    margin-right: 0.5rem;
+}
+
+.btn-secondary-header {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary-header:hover {
+    background-color: #5a6268;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-secondary-cancel {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary-cancel:hover {
+    background-color: #5a6268;
+    color: white;
+}
+
+.btn-primary-submit {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary-submit:hover {
+    background-color: #0069d9;
+    color: white;
+}
+
 .form-actions-footer {
     display: flex;
     justify-content: flex-end;
-    gap: 15px;
-    padding: 20px 30px;
-    border-top: 1px solid #f0f0f0;
-    background-color: #f8f9fa;
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
+    gap: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #dee2e6;
+    margin-top: 1.5rem;
 }
 
-.btn-info-custom {
-    background-color: #17a2b8;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    transition: background-color 0.3s;
+/* Campos de fecha mejorados */
+.date-field {
+    position: relative;
 }
 
-.btn-info-custom:hover {
-    background-color: #138496;
+/* Responsive */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .employee-info-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .employee-avatar {
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
+    
+    .form-actions-footer {
+        flex-direction: column;
+    }
+    
+    .btn-secondary-cancel, .btn-primary-submit {
+        width: 100%;
+        justify-content: center;
+    }
 }

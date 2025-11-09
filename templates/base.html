@@ -5,34 +5,415 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SD-EPP | Dashboard{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/prueba.css' %}">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #47548b;
+            --secondary-color: #47548b;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #f44336;
+            --info-color: #2196F3;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --sidebar-width: 280px;
+            --header-height: 70px;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f7fb;
+            overflow-x: hidden;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            z-index: 1000;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .logo-area {
+            padding: 20px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+        
+        .sidebar-logo {
+            max-width: 180px;
+            height: auto;
+        }
+        
+        .sidebar-section {
+            padding: 20px 0;
+        }
+        
+        .section-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0 20px;
+            margin-bottom: 15px;
+            opacity: 0.7;
+            font-weight: 500;
+        }
+        
+        .menu-block {
+            margin-bottom: 10px;
+        }
+        
+        .menu-title-small {
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 8px 20px;
+            margin-bottom: 5px;
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .nav-button {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-button:hover, .nav-button.active {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: white;
+        }
+        
+        .nav-button i {
+            width: 24px;
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+        
+        .nav-button.submodule {
+            padding-left: 40px;
+            font-size: 0.9rem;
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+        
+        .main-header {
+            height: var(--header-height);
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--light-color);
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .notification-button {
+            position: relative;
+            background: none;
+            border: none;
+            color: var(--dark-color);
+            font-size: 1.2rem;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        
+        .notification-button:hover {
+            background-color: var(--light-color);
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: var(--danger-color);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logout-button {
+            background: none;
+            border: none;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-button:hover {
+            background-color: var(--light-color);
+            color: var(--danger-color);
+        }
+        
+        /* Content Area */
+        .content-area {
+            padding: 25px;
+        }
+        
+        /* Card Styles */
+        .card-custom {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: none;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        
+        .card-header-custom {
+            background-color: white;
+            border-bottom: 1px solid #eee;
+            padding: 20px 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .card-header-custom h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-body-custom {
+            padding: 25px;
+        }
+        
+        /* Camera Card Styles */
+        .video-placeholder {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+            min-height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .video-feed {
+            width: 100%;
+            height: auto;
+            max-height: 400px;
+            object-fit: contain;
+        }
+        
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .control-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            background-color: white;
+            color: var(--dark-color);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .control-button:hover {
+            background-color: var(--light-color);
+            border-color: #adb5bd;
+        }
+        
+        .toggle-camera[data-status="on"] {
+            background-color: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+        
+        /* Notifications Card Styles */
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            padding: 12px 15px;
+        }
+        
+        .table td {
+            padding: 12px 15px;
+            vertical-align: middle;
+        }
+        
+        .alert-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .alert-high {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .alert-medium {
+            background-color: rgba(255, 152, 0, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .alert-low {
+            background-color: rgba(33, 150, 243, 0.1);
+            color: var(--info-color);
+        }
+        
+        .alert-positive {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+        }
+        
+        /* Button Styles */
+        .refresh-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            background-color: white;
+            color: var(--dark-color);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-button:hover {
+            background-color: var(--light-color);
+        }
+        
+        /* Responsive Adjustments */
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content.active {
+                margin-left: var(--sidebar-width);
+            }
+            
+            .mobile-menu-toggle {
+                display: block !important;
+            }
+        }
+        
+        /* Animation for alerts */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+    </style>
+    
     {% block extra_head %}{% endblock %}
 </head>
 <body>
     {% csrf_token %}
+    
+    <!-- Mobile Menu Toggle (Hidden on desktop) -->
+    <button class="btn btn-primary d-lg-none mobile-menu-toggle" style="position: fixed; top: 15px; left: 15px; z-index: 1100; display: none;">
+        <i class="fas fa-bars"></i>
+    </button>
+    
     <div class="dashboard-container">
-        
         <aside class="sidebar">
             <div class="logo-area">
                 <img src="{% static 'img/logo.png' %}" alt="Logo SD-EPP" class="sidebar-logo">
             </div>
             
-             <div class="sidebar-section">
-                    <p class="section-title">Navegación Principal</p>
-
-                    <a href="{% url 'deteccion:inicio' %}" class="nav-button">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Inicio </span>
-                    </a>
-                </div>
+            <div class="sidebar-section">
+                <p class="section-title">Navegación Principal</p>
+                <a href="{% url 'deteccion:inicio' %}" class="nav-button {% if request.resolver_match.url_name == 'inicio' %}active{% endif %}">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Inicio</span>
+                </a>
+            </div>
 
             <div class="sidebar-section">
                 {% block sidebar_static_modules %}
-                    {% endblock %}
+                <!-- Módulos estáticos adicionales pueden ir aquí -->
+                {% endblock %}
             </div>
                 
+            <!-- SECCIÓN DE MÓDULOS PERSONALIZADOS -->
             {% if user.is_authenticated and menu_list %}
             <div class="sidebar-section">
                 <p class="section-title">Accesos Personalizados</p>
@@ -42,7 +423,7 @@
                         {% for module_permission in menu_item.group_module_permission_list %}
                             {% with module=module_permission.module %}
                                 {% if module.url %}
-                                    <a href="{{ module.url }}" class="nav-button submodule">
+                                    <a href="{{ module.url }}" class="nav-button submodule {% if request.path == module.url %}active{% endif %}">
                                         {% if module.icon %}
                                             <i class="{{ module.icon }}"></i>
                                         {% else %}
@@ -57,20 +438,19 @@
                 {% endfor %}
             </div>
             {% endif %}
-            
-
         </aside>
 
         <main class="main-content">
             <header class="main-header">
                 <div class="user-info">
-                    <img src="{% static 'img/perfil.jpg' %}" alt="Foto de Perfil" class="user-profile-pic"> 
-                    <span>Bienvenido <strong>{% if user.is_authenticated %}{{ user.first_name|default:user.username }}{% endif %}</strong></span>
+                    <div class="user-info">
+                   <span>Bienvenido <strong>{% if user.is_authenticated %}{{ user.first_name|default:user.username }}{% endif %}</strong></span>
+                </div>
                 </div>
                 <div class="header-actions">
                     <button class="notification-button">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-badge">3</span> 
+                        <span class="notification-badge" id="notification-counter">0</span>
                     </button>
                     
                     <form id="logout-form" action="{% url 'deteccion:logout' %}" method="post" style="display: none;">
@@ -85,27 +465,301 @@
 
             <div class="content-area">
                 {% block content %}
-                    {% endblock %}
+                <!-- Contenido específico de cada página -->
+                {% endblock %}
             </div>
         </main>
     </div>
 
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
-        // Navegación activa (copiado de inicio.html, aunque la lógica completa
-        // para establecer la clase 'active' para el enlace actual
-        // debería hacerse preferiblemente en el servidor o con JS más avanzado)
-        document.querySelectorAll('.nav-button').forEach(button => {
-            button.addEventListener('click', function() {
-                // Remueve 'active' de todos (comportamiento de botón, no de navegación)
-                document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
-                // Añade 'active' al que fue clickeado
-                this.classList.add('active');
+        // Mobile menu toggle
+        document.querySelector('.mobile-menu-toggle')?.addEventListener('click', function() {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('.main-content').classList.toggle('active');
+        });
+
+        // Navegación activa mejorada
+        document.addEventListener('DOMContentLoaded', function() {
+            // Resaltar enlace activo basado en la URL actual
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav-button').forEach(button => {
+                if (button.href && (button.href.includes(currentPath) || currentPath.includes(button.href))) {
+                    button.classList.add('active');
+                }
+            });
+            
+            // Manejo de clics en botones de navegación
+            document.querySelectorAll('.nav-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Close mobile menu after selection
+                    if (window.innerWidth < 992) {
+                        document.querySelector('.sidebar').classList.remove('active');
+                        document.querySelector('.main-content').classList.remove('active');
+                    }
+                });
+            });
+
+            // Evento de notificación
+            document.querySelector('.notification-button').addEventListener('click', () => {
+                // Aquí podrías implementar un modal de notificaciones
+                alert('Funcionalidad de notificaciones en desarrollo');
             });
         });
 
-        // Evento de notificación (copiado de inicio.html)
-        document.querySelector('.notification-button').addEventListener('click', () => {
-            alert('Mostrando notificaciones');
+        // ------------------------------------------------------------------
+        // SISTEMA DE ALERTAS (Mejorado con Bootstrap)
+        // ------------------------------------------------------------------
+        let alertInterval;
+        const REFRESH_RATE = 3000; // 3 segundos
+
+        function fetchAlerts() {
+            fetch("{% url 'deteccion:latest_alerts' %}")
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error en la respuesta del servidor');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const tbody = document.getElementById('alerts-tbody');
+                    const notificationCounter = document.getElementById('notification-counter');
+                    
+                    // Actualizar contador de notificaciones
+                    if (data.alerts && data.alerts.length > 0) {
+                        notificationCounter.textContent = data.alerts.length;
+                        notificationCounter.style.display = 'inline-block';
+                    } else {
+                        notificationCounter.style.display = 'none';
+                    }
+                    
+                    // Actualizar tabla si existe en la página
+                    if (tbody) {
+                        tbody.innerHTML = '';
+                        
+                        if (data.alerts && data.alerts.length > 0) {
+                            data.alerts.forEach(a => {
+                                const tr = document.createElement('tr');
+                                tr.classList.add('fade-in');
+                                
+                                const levelClass = `alert-${a.level}`;
+                                const evidenceLink = a.video ? 
+                                    `<a href="/inicio/incunplimiento/${a.id}/" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>` : 
+                                    '<span class="text-muted">-</span>';
+                                
+                                tr.innerHTML = `
+                                    <td>
+                                        <span class="alert-badge ${levelClass}">${a.message}</span>
+                                    </td>
+                                    <td>${a.timestamp}</td>
+                                    <td>${evidenceLink}</td>
+                                    <td>
+                                        <span class="badge 
+                                            ${a.level === 'high' ? 'bg-danger' : 
+                                              a.level === 'medium' ? 'bg-warning' : 
+                                              a.level === 'low' ? 'bg-info' : 'bg-success'}">
+                                            ${a.level.charAt(0).toUpperCase() + a.level.slice(1)}
+                                        </span>
+                                    </td>
+                                `;
+                                tbody.appendChild(tr);
+                            });
+                        } else {
+                            tbody.innerHTML = `
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                                        <p>No hay alertas recientes</p>
+                                    </td>
+                                </tr>`;
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error("Error al obtener alertas:", err);
+                    const tbody = document.getElementById('alerts-tbody');
+                    if (tbody) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="4" class="text-center text-danger py-3">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Error cargando alertas
+                                </td>
+                            </tr>`;
+                    }
+                });
+        }
+
+        function clearAlerts() {
+            const tbody = document.getElementById('alerts-tbody');
+            const notificationCounter = document.getElementById('notification-counter');
+            
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                            <p>No hay alertas recientes</p>
+                        </td>
+                    </tr>`;
+            }
+            notificationCounter.style.display = 'none';
+        }
+
+        function refreshAlerts() {
+            const refreshBtn = document.getElementById('refresh-alerts-btn');
+            if (refreshBtn) {
+                const originalHtml = refreshBtn.innerHTML;
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando...';
+                refreshBtn.disabled = true;
+                
+                fetchAlerts();
+                
+                setTimeout(() => {
+                    refreshBtn.innerHTML = originalHtml;
+                    refreshBtn.disabled = false;
+                }, 1000);
+            }
+        }
+
+        // Inicialización del sistema de alertas
+        document.addEventListener('DOMContentLoaded', function() {
+            // Asignar eventos a los botones si existen en la página
+            const refreshBtn = document.getElementById('refresh-alerts-btn');
+            const clearBtn = document.getElementById('clear-alerts-btn');
+            
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', refreshAlerts);
+            }
+            if (clearBtn) {
+                clearBtn.addEventListener('click', clearAlerts);
+            }
+            
+            // Iniciar la recarga automática si estamos en una página con alertas
+            const alertsTbody = document.getElementById('alerts-tbody');
+            if (alertsTbody) {
+                alertInterval = setInterval(fetchAlerts, REFRESH_RATE);
+                fetchAlerts(); // Cargar alertas al inicio
+            }
+            
+            // Manejo de visibilidad de la página
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    clearInterval(alertInterval);
+                } else {
+                    if (document.getElementById('alerts-tbody')) {
+                        alertInterval = setInterval(fetchAlerts, REFRESH_RATE);
+                        fetchAlerts();
+                    }
+                }
+            });
+        });
+
+        // ------------------------------------------------------------------
+        // FUNCIONALIDAD DE CÁMARA (Mejorada con Bootstrap)
+        // ------------------------------------------------------------------
+        function toggleCamera(action) {
+            const cameraType = document.getElementById('camera-type');
+            const data = { 
+                action, 
+                camera_type: cameraType ? cameraType.value : 'droidcam' 
+            };
+            
+            if (cameraType && cameraType.value === 'droidcam') {
+                const ipInput = document.getElementById('droidcam-ip');
+                const portInput = document.getElementById('droidcam-port');
+                data.ip = ipInput ? ipInput.value || '192.168.1.100' : '192.168.1.100';
+                data.port = portInput ? portInput.value || '4747' : '4747';
+            }
+            
+            return fetch('{% url "deteccion:toggle_camera" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(data)
+            }).then(r => r.json());
+        }
+
+        // Inicializar eventos de cámara si existen en la página
+        document.addEventListener('DOMContentLoaded', function() {
+            const cameraTypeSelect = document.getElementById('camera-type');
+            const toggleCameraBtn = document.querySelector('.toggle-camera');
+            const fullscreenBtn = document.querySelector('.fullscreen-btn');
+            
+            // DroidCam settings
+            if (cameraTypeSelect) {
+                cameraTypeSelect.addEventListener('change', function() {
+                    const droidcamSettings = document.getElementById('droidcam-settings');
+                    if (droidcamSettings) {
+                        if (this.value === 'droidcam') {
+                            droidcamSettings.classList.remove('d-none');
+                            droidcamSettings.classList.add('d-flex');
+                        } else {
+                            droidcamSettings.classList.add('d-none');
+                            droidcamSettings.classList.remove('d-flex');
+                        }
+                    }
+                });
+            }
+
+            // Toggle cámara
+            if (toggleCameraBtn) {
+                toggleCameraBtn.addEventListener('click', function() {
+                    const btn = this;
+                    const status = btn.getAttribute('data-status');
+                    const action = status === 'off' ? 'start' : 'stop';
+                    const video = document.getElementById('video-feed');
+                    const statusDiv = document.getElementById('camera-status');
+
+                    toggleCamera(action).then(data => {
+                        if (data.status === 'started') {
+                            btn.setAttribute('data-status', 'on');
+                            btn.querySelector('span').textContent = 'Apagar';
+                            btn.classList.add('toggle-camera-on');
+                            if (video) {
+                                video.src = '{% url "deteccion:video_feed" %}';
+                                video.style.display = 'block';
+                            }
+                            if (statusDiv) {
+                                statusDiv.style.display = 'none';
+                            }
+                        } else {
+                            btn.setAttribute('data-status', 'off');
+                            btn.querySelector('span').textContent = 'Encender';
+                            btn.classList.remove('toggle-camera-on');
+                            if (video) {
+                                video.style.display = 'none';
+                            }
+                            if (statusDiv) {
+                                statusDiv.style.display = 'flex';
+                                statusDiv.innerHTML = '<i class="fas fa-video-slash fa-2x mb-2"></i><p>Cámara apagada</p>';
+                            }
+                        }
+                    });
+                });
+            }
+
+            // Fullscreen
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', () => {
+                    const video = document.querySelector('.video-feed');
+                    if (video) {
+                        if (video.requestFullscreen) {
+                            video.requestFullscreen();
+                        } else if (video.webkitRequestFullscreen) {
+                            video.webkitRequestFullscreen();
+                        } else if (video.msRequestFullscreen) {
+                            video.msRequestFullscreen();
+                        }
+                    }
+                });
+            }
         });
     </script>
     

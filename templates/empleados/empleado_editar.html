@@ -4,30 +4,65 @@
 {% block title %}Editar Empleado | {{ object.nombres }}{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/editar.css' %}">
+<link rel="stylesheet" href="{% static 'css/Editar.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 {% endblock %}
 
 {% block content %}
 <div class="main-content-wrapper">
     
+    <!-- Encabezado mejorado con breadcrumb -->
     <header class="page-header">
-        <h1 class="page-title">
-            <i class="fas fa-user-edit"></i> 
-            Editar Empleado
-        </h1>
-        <a href="{% url 'deteccion:lista_empleados' %}" class="btn-secondary-header">
-            <i class="fas fa-arrow-left"></i> Volver a Lista
-        </a>
+        <nav class="breadcrumb-nav" aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'deteccion:lista_empleados' %}">Empleados</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Editar {{ object.nombres }}</li>
+            </ol>
+        </nav>
+        
+        <div class="header-content">
+            <div class="title-section">
+                <h1 class="page-title">
+                    <i class="fas fa-user-edit"></i> 
+                    Editar Empleado
+                </h1>
+                <p class="page-subtitle">Actualiza la información del empleado</p>
+            </div>
+            
+            <div class="header-actions">
+                <a href="{% url 'deteccion:lista_empleados' %}" class="btn-secondary-header">
+                    <i class="fas fa-arrow-left"></i> Volver a Lista
+                </a>
+            </div>
+        </div>
     </header>
 
     <div class="form-card">
         
-        <div class="card-header">
-            <h2>Datos del Empleado:</h2>
-            <p class="subtitle">{{ object.nombres }} {{ object.apellidos }} (ID: {{ object.id }})</p>
+        <!-- Tarjeta de información del empleado -->
+        <div class="employee-info-card">
+            <div class="employee-avatar">
+                {% if object.foto %}
+                    <img src="{{ object.foto.url }}" alt="Foto de {{ object.nombres }}" class="avatar-img">
+                {% else %}
+                    <div class="avatar-placeholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="employee-details">
+                <h2>{{ object.nombres }} {{ object.apellidos }}</h2>
+                <p class="employee-id">ID: {{ object.id }}</p>
+                <div class="employee-status">
+                    <span class="status-badge {% if object.activo %}status-active{% else %}status-inactive{% endif %}">
+                        <i class="fas fa-circle"></i>
+                        {% if object.activo %}Activo{% else %}Inactivo{% endif %}
+                    </span>
+                </div>
+            </div>
         </div>
 
+        <!-- Formulario de edición -->
         <form method="post" enctype="multipart/form-data" class="app-form">
             {% csrf_token %}
 
@@ -42,19 +77,30 @@
 
             <div class="card-body form-grid">
                 {% for field in form %}
-                <div class="form-group">
+                <div class="form-group {% if field.errors %}form-group-error{% endif %}">
                     <label for="{{ field.id_for_label }}" class="form-label">
                         {{ field.label }}{% if field.field.required %}<span class="required-star">*</span>{% endif %}
                     </label>
                     
-                    {{ field }}
+                    <div class="field-wrapper">
+                        {{ field }}
+                        {% if field.name == 'foto' %}
+                            <div class="file-upload-preview" id="preview-{{ field.name }}">
+                                {% if object.foto %}
+                                    <img src="{{ object.foto.url }}" alt="Vista previa">
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
                     
                     {% if field.help_text %}
                         <small class="form-help-text">{{ field.help_text }}</small>
                     {% endif %}
                     
                     {% for error in field.errors %}
-                        <small class="form-error-text">{{ error }}</small>
+                        <small class="form-error-text">
+                            <i class="fas fa-exclamation-circle"></i> {{ error }}
+                        </small>
                     {% endfor %}
                 </div>
                 {% endfor %}
@@ -76,11 +122,44 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Aplica la clase 'form-control' a los campos de input/select/textarea
-        // para asegurar que el CSS aplique los estilos correctos.
         document.querySelectorAll('.app-form input:not([type="checkbox"]), .app-form select, .app-form textarea')
             .forEach(field => {
                 field.classList.add('form-control');
             });
+            
+        // Vista previa para la carga de imágenes
+        const fotoInput = document.querySelector('input[type="file"][name="foto"]');
+        if (fotoInput) {
+            fotoInput.addEventListener('change', function(e) {
+                const preview = document.getElementById('preview-foto');
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `<img src="${e.target.result}" alt="Vista previa">`;
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+        
+        // Mejora de campos de fecha con picker nativo
+        const dateFields = document.querySelectorAll('input[type="date"]');
+        dateFields.forEach(field => {
+            field.classList.add('date-field');
+        });
+        
+        // Resaltar campos con errores
+        document.querySelectorAll('.form-group-error').forEach(group => {
+            const input = group.querySelector('input, select, textarea');
+            if (input) {
+                input.addEventListener('focus', function() {
+                    group.classList.add('focused');
+                });
+                input.addEventListener('blur', function() {
+                    group.classList.remove('focused');
+                });
+            }
+        });
     });
 </script>
 {% endblock extra_scripts %}

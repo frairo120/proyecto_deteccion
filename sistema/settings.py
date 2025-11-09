@@ -129,8 +129,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-MEDIA_URL = '/images/'
-MEDIA_ROOT = BASE_DIR / 'static/images'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # Default primary key field type
@@ -144,9 +144,4 @@ STATICFILES_DIRS = [
     # Esto es donde DEBES guardar tu carpeta 'static'
     os.path.join(BASE_DIR, 'static'), 
 ]
-
-# Directorio donde Django recolectará todos los archivos estáticos con 'collectstatic'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-os.path.join(BASE_DIR, 'grabaciones')
-MEDIA_URL = '/media/'
 MODEL_PATH = r"C:\Users\jonat\Desktop\modelo_entrenado\sistema\models2\Models\best.pt"

@@ -1,0 +1,868 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SD-EPP | Alertas Activas</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #007bff;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+        }
+
+        /* Layout Principal */
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #47548b, #47548b);
+            color: rgb(209, 29, 29);
+            padding: 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .logo-area {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }
+
+        .sidebar-logo {
+            max-width: 180px;
+            height: auto;
+        }
+
+        .sidebar-section {
+            padding: 1.5rem 0;
+        }
+
+        .nav-button {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-button:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+            border-left-color: var(--primary);
+        }
+
+        .nav-button.active {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            border-left-color: var(--primary);
+        }
+
+        .nav-button i {
+            width: 20px;
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .notification-button {
+            background: none;
+            border: none;
+            color: #6c757d;
+            font-size: 1.2rem;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .notification-button:hover {
+            background-color: #f8f9fa;
+            color: var(--primary);
+        }
+
+        /* Page Content */
+        .page-content {
+            flex: 1;
+            padding: 2rem;
+            background-color: #f8f9fa;
+        }
+
+        /* Estadísticas */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: 47548b;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            border-left: 4px solid var(--primary);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-total { border-left-color: var(--primary); }
+        .stat-pending { border-left-color: var(--warning); }
+        .stat-resolved { border-left-color: var(--success); }
+        .stat-rate { border-left-color: var(--info); }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .stat-total .stat-number { color: var(--primary); }
+        .stat-pending .stat-number { color: var(--warning); }
+        .stat-resolved .stat-number { color: var(--success); }
+        .stat-rate .stat-number { color: var(--info); }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Badges de alerta */
+        .badge-alert {
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #ec0731;
+        }
+
+        .badge-high { 
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .badge-medium { 
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .badge-low { 
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+
+        .badge-positive { 
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        /* Estados de resolución */
+        .badge-status {
+            padding: 0.4rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-pending { 
+            background-color: #fff3cd; 
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status-resolved { 
+            background-color: #d4edda; 
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-false_positive { 
+            background-color: #e2e3e5; 
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+
+        .status-non_compliant { 
+            background-color: #f8d7da; 
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-system_error { 
+            background-color: #cce7ff; 
+            color: #004085;
+            border: 1px solid #b3d7ff;
+        }
+
+        /* Botones de acción */
+        .btn-resolve {
+            background: linear-gradient(135deg, var(--success), #1e7e34);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-resolve:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-resolve:disabled {
+            background: #6c757d;
+            transform: none;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .video-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .video-link:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
+        /* Tabla */
+        .table-card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .table th {
+            background: linear-gradient(135deg, var(--primary), #0056b3);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            border: none;
+            padding: 1rem 0.75rem;
+        }
+
+        .table td {
+            padding: 1rem 0.75rem;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #f8f9ff;
+        }
+
+        /* Estado de carga */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            border-radius: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+            }
+            
+            .page-content {
+                padding: 1rem;
+            }
+            
+            .main-header {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-responsive {
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% csrf_token %}
+    <div class="dashboard-container">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <img src="{% static 'img/logo.png' %}" alt="Logo SD-EPP" class="sidebar-logo">
+            </div>
+            
+            <div class="sidebar-section">
+                <a href="{% url 'deteccion:inicio' %}" class="nav-button">
+                    <i class="fas fa-home"></i> <span>Dashboard</span>
+                </a>
+                <a href="{% url 'deteccion:alert_list' %}" class="nav-button active">
+                    <i class="fas fa-exclamation-triangle"></i> <span>Alertas Activas</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="main-header">
+                 <div class="user-info">
+                    <div class="user-profile-pic">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <span>Bienvenido <strong>{{ user.username }}</strong></span>
+                </div>
+                <div class="header-actions">
+                    <button class="notification-button">
+                        <i class="fas fa-bell"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notification-counter" style="display: none;">
+                            0
+                        </span>
+                    </button>
+                </div>
+            </header>
+
+            <section class="page-content">
+                <!-- Header de página -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
+                            <div>
+                                <h1 class="h3 mb-1 fw-bold">Alertas Activas</h1>
+                                <p class="text-muted mb-0">Sistema de gestión y resolución de incumplimientos de EPP (Últimas 24h)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estadísticas -->
+                <div class="stats-grid">
+                    <div class="stat-card stat-total">
+                        <div class="stat-number" id="stat-total">0</div>
+                        <div class="stat-label">Total Alertas</div>
+                    </div>
+                    <div class="stat-card stat-pending">
+                        <div class="stat-number" id="stat-pending">0</div>
+                        <div class="stat-label">Pendientes</div>
+                    </div>
+                    <div class="stat-card stat-resolved">
+                        <div class="stat-number" id="stat-resolved">0</div>
+                        <div class="stat-label">Resueltas</div>
+                    </div>
+                    <div class="stat-card stat-rate">
+                        <div class="stat-number" id="stat-rate">0%</div>
+                        <div class="stat-label">Tasa de Resolución</div>
+                    </div>
+                </div>
+
+                <!-- Estado de carga -->
+                <div id="alert-status" class="alert alert-warning d-none">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    <span id="status-text">Cargando alertas...</span>
+                </div>
+
+                <!-- Tabla de alertas -->
+                <div class="card table-card">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 60px;">ID</th>
+                                        <th>Mensaje</th>
+                                        <th>Elemento Faltante</th>
+                                        <th style="width: 100px;">Nivel</th>
+                                        <th style="width: 120px;">Estado</th>
+                                        <th style="width: 180px;">Hora</th>
+                                        <th style="width: 80px;">Evidencia</th>
+                                        <th style="width: 120px;" class="text-center">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alerts-tbody">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-5">
+                                            <div class="loading-overlay">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Cargando...</span>
+                                                </div>
+                                            </div>
+                                            <i class="fas fa-spinner fa-spin me-2"></i>Cargando alertas...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal de Resolución - Bootstrap -->
+    <div class="modal fade" id="resolutionModal" tabindex="-1" aria-labelledby="resolutionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="resolutionModalLabel">
+                        <i class="fas fa-edit me-2"></i>Resolver y Configurar Alerta
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="resolutionForm">
+                    <div class="modal-body">
+                        <input type="hidden" id="alertId" name="alert_id">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="resolutionStatus" class="form-label">
+                                    <i class="fas fa-check-circle me-2"></i>Tipo de Resolución
+                                </label>
+                                <select class="form-select" id="resolutionStatus" name="resolution_status" required>
+                                    <option value="resolved">✅ Resuelto - Incumplimiento corregido</option>
+                                    <option value="non_compliant">⚠️ Incumplimiento Real - Trabajador sin EPP</option>
+                                    <option value="false_positive">🔍 Falso Positivo - Error de detección</option>
+                                    <option value="system_error">🐛 Error del Sistema - Problema técnico</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="newLevel" class="form-label">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Nivel de Alerta
+                                </label>
+                                <select class="form-select" id="newLevel" name="new_level">
+                                    <option value="">-- Mantener nivel actual --</option>
+                                    <option value="high">🔴 Alta - Peligro grave e inminente</option>
+                                    <option value="medium">🟡 Media - Riesgo moderado</option>
+                                    <option value="low">🟢 Baja - Riesgo mínimo</option>
+                                    <option value="positive">🔵 Positiva - Caso de cumplimiento</option>
+                                </select>
+                                <div class="form-text">
+                                    Opcional: Puede ajustar el nivel de la alerta durante la resolución
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="resolutionNotes" class="form-label">
+                                <i class="fas fa-sticky-note me-2"></i>Notas y Observaciones
+                            </label>
+                            <textarea class="form-control" id="resolutionNotes" name="resolution_notes" 
+                                      placeholder="Describa los detalles de la resolución, acciones tomadas, o observaciones relevantes..."
+                                      rows="4"></textarea>
+                        </div>
+                        
+                        <!-- Resumen de cambios -->
+                        <div class="alert alert-info" id="changesSummary" style="display: none;">
+                            <h6 class="alert-heading mb-2">
+                                <i class="fas fa-info-circle me-2"></i>Resumen de cambios
+                            </h6>
+                            <div id="summaryContent" class="mb-0"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check-double me-2"></i>Confirmar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        let currentAlertId = null;
+        let currentAlertData = null;
+        const REFRESH_RATE = 30000; // 30 segundos
+
+        // Inicializar tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+        });
+
+        // Función para mostrar notificación toast
+        function showNotification(message, type = 'success') {
+            // Crear toast dinámicamente
+            const toastContainer = document.createElement('div');
+            toastContainer.className = 'position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+            
+            const toastHTML = `
+                <div class="toast align-items-center text-white bg-${type} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-2"></i>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.innerHTML = toastHTML;
+            document.body.appendChild(toastContainer);
+            
+            // Auto-remover después de 4 segundos
+            setTimeout(() => {
+                if (toastContainer.parentNode) {
+                    toastContainer.parentNode.removeChild(toastContainer);
+                }
+            }, 4000);
+        }
+
+        // Funciones del modal
+        function openResolutionModal(alertId) {
+            currentAlertId = alertId;
+            
+            // Cargar datos de la alerta antes de abrir el modal
+            fetch(`/inicio/alerts/${alertId}/data/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentAlertData = data.alert;
+                        updateLevelInfo(data.alert.level);
+                        updateChangesSummary();
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('resolutionModal'));
+                        modal.show();
+                    } else {
+                        showNotification('Error al cargar datos de la alerta', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error cargando datos de alerta:', error);
+                    const modal = new bootstrap.Modal(document.getElementById('resolutionModal'));
+                    modal.show();
+                    updateChangesSummary();
+                });
+        }
+
+        // Actualizar información del nivel actual
+        function updateLevelInfo(level) {
+            const levelNames = {
+                'high': 'Alta',
+                'medium': 'Media', 
+                'low': 'Baja',
+                'positive': 'Positiva'
+            };
+            
+            const levelInfo = document.getElementById('currentLevelInfo');
+            if (!levelInfo) {
+                const levelGroup = document.querySelector('#newLevel').parentNode;
+                const infoDiv = document.createElement('div');
+                infoDiv.id = 'currentLevelInfo';
+                infoDiv.className = 'alert alert-light mt-2';
+                infoDiv.innerHTML = `<strong>Nivel actual:</strong> <span class="badge-alert badge-${level}">${levelNames[level]}</span>`;
+                levelGroup.appendChild(infoDiv);
+            } else {
+                levelInfo.innerHTML = `<strong>Nivel actual:</strong> <span class="badge-alert badge-${level}">${levelNames[level]}</span>`;
+            }
+        }
+
+        // Actualizar el resumen de cambios
+        function updateChangesSummary() {
+            const resolutionStatus = document.getElementById('resolutionStatus');
+            const newLevel = document.getElementById('newLevel');
+            const summaryDiv = document.getElementById('changesSummary');
+            const summaryContent = document.getElementById('summaryContent');
+            
+            const resolutionText = resolutionStatus.options[resolutionStatus.selectedIndex].text;
+            const levelText = newLevel.value ? newLevel.options[newLevel.selectedIndex].text : 'Mantener nivel actual';
+            
+            let summaryHTML = `
+                <div class="row">
+                    <div class="col-sm-6">
+                        <strong>Resolución:</strong><br>
+                        <span class="text-muted">${resolutionText.split(' - ')[1]}</span>
+                    </div>
+                    <div class="col-sm-6">
+                        <strong>Nivel:</strong><br>
+                        <span class="text-muted">${levelText}</span>
+                    </div>
+                </div>
+            `;
+            
+            summaryContent.innerHTML = summaryHTML;
+            summaryDiv.style.display = 'block';
+        }
+
+        // Cargar estadísticas
+        function loadStatistics() {
+            fetch("{% url 'deteccion:alert_statistics' %}")
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('stat-total').textContent = data.total_alerts;
+                    document.getElementById('stat-pending').textContent = data.unresolved_alerts;
+                    document.getElementById('stat-resolved').textContent = data.resolved_alerts;
+                    document.getElementById('stat-rate').textContent = `${data.resolution_rate.toFixed(1)}%`;
+                })
+                .catch(error => {
+                    console.error('Error cargando estadísticas:', error);
+                });
+        }
+
+        // Función para cargar las alertas
+        function loadAlerts() {
+            const tbody = document.getElementById('alerts-tbody');
+            const statusDiv = document.getElementById('alert-status');
+            const statusText = document.getElementById('status-text');
+            
+            statusDiv.classList.remove('d-none');
+            statusText.textContent = 'Actualizando alertas...';
+
+            fetch("{% url 'deteccion:alert_data' %}")
+                .then(response => response.json())
+                .then(data => {
+                    tbody.innerHTML = "";
+                    statusDiv.classList.add('d-none');
+
+                    if (data.alerts && data.alerts.length > 0) {
+                        data.alerts.forEach(alert => {
+                            const tr = document.createElement('tr');
+                            
+                            const videoLink = alert.video_url 
+                                ? `<a href="/inicio/incunplimiento/${alert.id}/" target="_blank" class="video-link" data-bs-toggle="tooltip" title="Ver evidencia">
+                                      <i class="fas fa-video"></i> Ver
+                                   </a>` 
+                                : '<span class="text-muted">-</span>';
+                            
+                            // Estado de resolución
+                            const resolutionStatus = alert.resolution_status || 'pending';
+                            const resolutionDisplay = {
+                                'pending': 'Pendiente',
+                                'resolved': 'Resuelto',
+                                'false_positive': 'Falso Positivo',
+                                'non_compliant': 'Incumplimiento',
+                                'system_error': 'Error Sistema'
+                            }[resolutionStatus];
+                            
+                            const statusBadge = `<span class="badge-status status-${resolutionStatus}">${resolutionDisplay}</span>`;
+                            
+                            // Botón de acción
+                            let actionButton = '';
+                            if (!alert.resolved) {
+                                actionButton = `
+                                    <button class="btn btn-resolve" onclick="openResolutionModal(${alert.id})" 
+                                            data-bs-toggle="tooltip" title="Resolver alerta">
+                                        <i class="fas fa-edit me-1"></i>Resolver
+                                    </button>
+                                `;
+                            } else {
+                                actionButton = `
+                                    <button class="btn btn-resolve" disabled 
+                                            data-bs-toggle="tooltip" title="Alerta ya resuelta">
+                                        <i class="fas fa-check-double me-1"></i>Resuelta
+                                    </button>
+                                `;
+                            }
+
+                            tr.innerHTML = `
+                                <td class="fw-bold">${alert.id}</td>
+                                <td>${alert.message}</td>
+                                <td>${alert.missing || '-'}</td>
+                                <td><span class="badge-alert badge-${alert.level}">${alert.level.toUpperCase()}</span></td>
+                                <td>${statusBadge}</td>
+                                <td><small class="text-muted">${alert.timestamp}</small></td>
+                                <td>${videoLink}</td>
+                                <td class="text-center">${actionButton}</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="fas fa-bell-slash fa-2x mb-3"></i>
+                                    <p class="mb-0">No hay alertas activas en las últimas 24 horas.</p>
+                                </td>
+                            </tr>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar alertas:', error);
+                    statusDiv.classList.remove('d-none');
+                    statusText.textContent = 'Error al cargar las alertas. Verifique la conexión o el servidor.';
+                    statusDiv.className = 'alert alert-danger';
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-danger">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                                <p class="mb-0">Error al cargar datos.</p>
+                            </td>
+                        </tr>`;
+                });
+        }
+
+        // Manejar el formulario de resolución
+        document.getElementById('resolutionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const resolutionData = {
+                resolution_status: document.getElementById('resolutionStatus').value,
+                resolution_notes: document.getElementById('resolutionNotes').value,
+                new_level: document.getElementById('newLevel').value || null
+            };
+            
+            // Mostrar loading
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+            submitBtn.disabled = true;
+            
+            fetch(`/inicio/alerts/resolve/${currentAlertId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(resolutionData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let successMessage = data.message;
+                    if (data.level_updated) {
+                        successMessage += ` y nivel actualizado a ${data.new_level}`;
+                    }
+                    showNotification(successMessage, 'success');
+                    
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('resolutionModal'));
+                    modal.hide();
+                    
+                    loadAlerts();
+                    loadStatistics();
+                } else {
+                    showNotification('Error: ' + data.error, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error de conexión', 'danger');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+
+        // Actualizar resumen cuando cambien los campos
+        document.getElementById('resolutionStatus').addEventListener('change', updateChangesSummary);
+        document.getElementById('newLevel').addEventListener('change', updateChangesSummary);
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAlerts();
+            loadStatistics();
+            
+            // Recargar cada 30 segundos
+            setInterval(() => {
+                loadAlerts();
+                loadStatistics();
+            }, REFRESH_RATE);
+            
+            console.log(`🔄 Sistema de alertas iniciado - Actualizando cada ${REFRESH_RATE/1000} segundos`);
+        });
+    </script>
+</body>
+</html>

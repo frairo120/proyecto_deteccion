@@ -83,3 +83,125 @@ admin.site.register(Cargo)
 admin.site.register(Empleado, EmpleadoAdmin)
 # Register your models here.
 admin.site.register(Alert, AlertAdmin)
+
+
+
+from django.utils.html import format_html
+from .models import (
+    Capacitacion,
+    ProgresoCapacitacion,
+    Evaluacion,
+    Pregunta,
+    OpcionRespuesta,
+    IntentoEvaluacion,
+    RespuestaUsuario,
+    Certificado
+)
+
+
+# --- Inline para las opciones de respuesta ---
+class OpcionRespuestaInline(admin.TabularInline):
+    model = OpcionRespuesta
+    extra = 2
+    fields = ('texto', 'es_correcta', 'orden')
+    ordering = ('orden',)
+
+
+# --- Inline para las preguntas dentro de Evaluacion ---
+class PreguntaInline(admin.TabularInline):
+    model = Pregunta
+    extra = 1
+    show_change_link = True
+    fields = ('texto', 'tipo', 'puntaje', 'orden')
+
+
+# --- Evaluacion admin ---
+@admin.register(Evaluacion)
+class EvaluacionAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'capacitacion', 'activa', 'creada_por', 'fecha_creacion')
+    list_filter = ('activa', 'fecha_creacion')
+    search_fields = ('titulo', 'capacitacion__titulo')
+    inlines = [PreguntaInline]
+    autocomplete_fields = ['capacitacion', 'creada_por']
+
+
+# --- Pregunta admin ---
+@admin.register(Pregunta)
+class PreguntaAdmin(admin.ModelAdmin):
+    list_display = ('texto_corto', 'evaluacion', 'tipo', 'puntaje', 'orden')
+    list_filter = ('tipo', 'evaluacion')
+    search_fields = ('texto',)
+    inlines = [OpcionRespuestaInline]
+
+    def texto_corto(self, obj):
+        return obj.texto[:60] + ("..." if len(obj.texto) > 60 else "")
+    texto_corto.short_description = "Pregunta"
+
+
+# --- Capacitacion admin ---
+@admin.register(Capacitacion)
+class CapacitacionAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'tipo_contenido', 'estado', 'creado_por', 'fecha_creacion', 'duracion_minutos', 'vista_previa')
+    list_filter = ('tipo_contenido', 'estado', 'fecha_creacion')
+    search_fields = ('titulo', 'descripcion')
+    readonly_fields = ('fecha_creacion', 'fecha_actualizacion')
+    autocomplete_fields = ['creado_por']
+
+    fieldsets = (
+        ("Información General", {
+            'fields': ('titulo', 'descripcion', 'estado', 'creado_por')
+        }),
+        ("Contenido", {
+            'fields': ('tipo_contenido', 'contenido_texto', 'archivo_pdf', 'archivo_imagen', 'url_video')
+        }),
+        ("Configuración de Evaluación", {
+            'fields': ('duracion_minutos', 'puntaje_minimo', 'intentos_permitidos')
+        }),
+        ("Tiempos", {
+            'fields': ('fecha_creacion', 'fecha_actualizacion')
+        }),
+    )
+
+    def vista_previa(self, obj):
+        """Muestra una vista del tipo de contenido"""
+        if obj.tipo_contenido == 'pdf' and obj.archivo_pdf:
+            return format_html(f"<a href='{obj.archivo_pdf.url}' target='_blank'>📄 Ver PDF</a>")
+        elif obj.tipo_contenido == 'video' and obj.url_video:
+            return format_html(f"<a href='{obj.url_video}' target='_blank'>🎬 Ver Video</a>")
+        elif obj.tipo_contenido == 'imagen' and obj.archivo_imagen:
+            return format_html(f"<img src='{obj.archivo_imagen.url}' width='100' />")
+        elif obj.tipo_contenido == 'texto':
+            return format_html(obj.contenido_texto[:60] + "...")
+        return "-"
+    vista_previa.short_description = "Vista Previa"
+
+
+# --- Progreso de Capacitación ---
+@admin.register(ProgresoCapacitacion)
+class ProgresoCapacitacionAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'capacitacion', 'progreso_porcentaje', 'completada', 'fecha_inicio')
+    list_filter = ('completada',)
+    search_fields = ('usuario__email', 'capacitacion__titulo')
+
+
+# --- Intento de Evaluación ---
+@admin.register(IntentoEvaluacion)
+class IntentoEvaluacionAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'evaluacion', 'puntaje_obtenido', 'aprobado', 'numero_intento', 'fecha_intento')
+    list_filter = ('aprobado',)
+    search_fields = ('usuario__email', 'evaluacion__titulo')
+
+
+# --- Certificados ---
+@admin.register(Certificado)
+class CertificadoAdmin(admin.ModelAdmin):
+    list_display = ('codigo_certificado', 'usuario', 'capacitacion', 'puntaje_final', 'fecha_emision')
+    search_fields = ('codigo_certificado', 'usuario__email', 'capacitacion__titulo')
+    list_filter = ('fecha_emision',)
+
+
+# --- Respuestas de Usuario (solo para inspección) ---
+@admin.register(RespuestaUsuario)
+class RespuestaUsuarioAdmin(admin.ModelAdmin):
+    list_display = ('intento', 'pregunta', 'opcion_seleccionada')
+    search_fields = ('intento__usuario__email', 'pregunta__texto')

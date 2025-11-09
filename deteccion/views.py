@@ -19,10 +19,12 @@ from .models import Menu, Module, Cargo, Empleado, GroupModulePermission,User, A
 from .forms import MenuForm, ModuleForm, CargoForm, EmpleadoForm, LoginForm, GroupForm, GroupModulePermissionForm
 from .forms import UserForm,UserEditForm,UserPasswordChangeForm
 from django.db.models import Prefetch
-
+import os
 from django.utils import timezone
 from datetime import timedelta
 from django.utils.timezone import localtime
+from django.db import models
+from .models import Capacitacion, ProgresoCapacitacion, Certificado
 
 class MenuContextMixin:
     """Mixin para agregar el contexto de menús y módulos a las vistas."""
@@ -86,7 +88,9 @@ def login_vista(request):
 
 @login_required
 def inicio(request):
-    """Vista principal o dashboard después del login."""
+    """Vista principal o inicio después del login."""
+    if request.user.groups.filter(name='trabajador').exists():
+        return redirect('deteccion:inicio_trabajador')
     # Obtener el contexto de menús para el usuario actual
     menu_context = MenuContextMixin().get_menu_context(request.user)
     # Obtener las últimas alertas (las 6 más recientes)
@@ -98,6 +102,58 @@ def inicio(request):
 
     return render(request, 'inicio.html', {'menu_list': menu_context, 'alerts': latest_alerts})
 
+
+
+@login_required
+def inicio_trabajador(request):
+    """Vista exclusiva para trabajadores - Panel de capacitación"""
+    # Verificar que realmente sea trabajador
+    if not request.user.groups.filter(name='trabajador').exists():
+        return redirect('deteccion:inicio')
+    
+    # Obtener capacitaciones publicadas
+    capacitaciones = Capacitacion.objects.filter(estado='publicada')
+    
+    # Obtener progreso del usuario actual
+    progresos = ProgresoCapacitacion.objects.filter(usuario=request.user).select_related('capacitacion')
+    
+    # Obtener certificados del usuario actual
+    certificados = Certificado.objects.filter(usuario=request.user).select_related('capacitacion')
+    
+    # Calcular estadísticas
+    capacitaciones_completadas = progresos.filter(completada=True).count()
+    total_capacitaciones = capacitaciones.count()
+    
+    # Calcular porcentaje de progreso
+    if total_capacitaciones > 0:
+        porcentaje_progreso = (capacitaciones_completadas / total_capacitaciones) * 100
+    else:
+        porcentaje_progreso = 0
+    
+    # Preparar datos para el template - solución sin filtros
+    capacitaciones_con_progreso = []
+    for capacitacion in capacitaciones:
+        progreso_capacitacion = next(
+            (p for p in progresos if p.capacitacion.id == capacitacion.id), 
+            None
+        )
+        capacitaciones_con_progreso.append({
+            'capacitacion': capacitacion,
+            'progreso': progreso_capacitacion
+        })
+    
+    context = {
+        'user': request.user,
+        'capacitaciones_con_progreso': capacitaciones_con_progreso,  # Nuevo formato
+        'progresos': progresos,
+        'certificados': certificados,
+        'capacitaciones_completadas': capacitaciones_completadas,
+        'total_capacitaciones': total_capacitaciones,
+        'porcentaje_progreso': porcentaje_progreso,
+        'current_date': timezone.now(),
+    }
+    return render(request, 'inicio_trabajador.html', context)
+
 def logout_view(request):
     """Cierra la sesión del usuario y redirige al login."""
     logout(request)
@@ -108,54 +164,6 @@ def grabaciones(request):
     """Muestra la página con el listado de grabaciones."""
     return render(request, 'deteccion/grabaciones.html')
 
-
-
-
-def alert_list(request):
-    # Obtenemos alertas no resueltas de las últimas 24 horas
-    since = timezone.now() - timedelta(hours=24)
-    alerts = Alert.objects.filter(timestamp__gte=since, resolved=False).order_by('-timestamp')
-    
-    data = []
-    for alert in alerts:
-        data.append({
-            'id': alert.id,
-            'message': alert.message,
-            'missing': alert.missing,
-            'level': alert.get_level_display(),
-            'video_url': alert.video.url if alert.video else '',
-            'timestamp': alert.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-        })
-    
-    return JsonResponse({'alerts': data})
-
-
-def alert_list_page(request):
-    context = {}
-    menu_context = MenuContextMixin().get_menu_context(request.user)
-    context['menu_list'] = menu_context
-    context['title'] = "Alertas Activas"
-    return render(request, 'usuarios/alert_list_ajax.html', context)
-
-
-
-
-def latest_alerts(request):
-    alerts = Alert.objects.order_by('-timestamp')[:10]   # últimas 10
-
-    alert_data = [
-        {
-            'id': a.pk,
-            'message': a.message,
-            'timestamp': localtime(a.timestamp).strftime("%H:%M:%S %d-%m-%Y"), 
-            'video': a.video.url if a.video else None, 
-            'level': a.level,
-        }
-        for a in alerts
-    ]
-    
-    return JsonResponse({"alerts": alert_data})
- 
 
 
 
@@ -240,19 +248,19 @@ class UserListView(LoginRequiredMixin, ListView):
 def user_delete(request, pk):
     user = get_object_or_404(User, pk=pk)
     
-    
     if request.method == 'POST':
-        full_name = user.get_full_name
+        full_name = user.get_full_name  # sin paréntesis
         user.delete()
         messages.success(request, f'El usuario {full_name} ha sido eliminado exitosamente.')
-        return redirect('deteccion:user_data')
+        return redirect('deteccion:user_list')
 
-    # Si no es POST, mostrar la página de confirmación
     context = {
         'user': user,
         'title': f'Eliminar Usuario: {user.username}',
     }
     return render(request, 'usuarios/delete.html', context)
+
+
 
 
 
@@ -782,50 +790,218 @@ BUCKET_NAME = 'mi-bucket-local' # 👈 Cambia este nombre al de tu bucket en Loc
 LOCALSTACK_ENDPOINT = 'http://localhost:4566' 
 
 def ver_incumplimiento(request, incumplimiento_id):
-    """Muestra los detalles de un incumplimiento, incluyendo el video usando LocalStack S3."""
-    
-    # 1. Obtener la instancia del incumplimiento (usando Alert como corregimos antes)
+    """Muestra detalles del incumplimiento - para archivos locales"""
     incumplimiento = get_object_or_404(Alert, pk=incumplimiento_id)
     
-    # 2. Inicializar el cliente Boto3 apuntando a LocalStack
-    # LocalStack acepta credenciales dummy como 'test'.
-    s3_client = boto3.client(
-        's3',
-        # URL que apunta al servicio S3 en tu contenedor LocalStack
-        endpoint_url=LOCALSTACK_ENDPOINT,  
-        aws_access_key_id='test',
-        aws_secret_access_key='test',
-        region_name='us-east-1' # Región dummy requerida por Boto3
-    )
+    image_url = None
+    debug_info = ""
     
-    # 3. La clave del objeto es la ruta guardada en la BD
-    object_key = f'grabaciones/{incumplimiento.video}'
-    
-    # 4. Generar la URL pre-firmada (método de Boto3)
-    try:
-        video_url_firmada = s3_client.generate_presigned_url(
-            'get_object',
-            Params={
-                'Bucket': BUCKET_NAME,
-                'Key': object_key,
-                # Esto emula el 'response_disposition=inline' de GCS
-                'ResponseContentDisposition': 'inline' 
-            },
-            # Duración de la URL en segundos (30 minutos)
-            ExpiresIn=1800 
-        )
-    except Exception as e:
-        print(f"Error al acceder al video en LocalStack: {e}")
-        # Si usas messages en Django, puedes añadir:
-        # messages.error(request, "El video no pudo ser encontrado en el almacenamiento local.")
-        video_url_firmada = None 
+    if incumplimiento.video:
+        # Obtener la ruta guardada en la BD
+        db_path = incumplimiento.video.name
+        debug_info = f"Ruta en BD: {db_path}"
         
+        print(f"🔍 Buscando imagen para alerta {incumplimiento_id}: {db_path}")
+        
+        # Construir ruta local completa
+        local_path = os.path.join('media', db_path)
+        
+        # Verificar si el archivo existe localmente
+        if os.path.exists(local_path):
+            # Usar la URL de medios de Django
+            image_url = f"/media/{db_path}"
+            print(f"✅ Imagen encontrada: {image_url}")
+            debug_info += f" | Encontrada en: {local_path}"
+        else:
+            print(f"❌ Archivo NO encontrado: {local_path}")
+            debug_info += f" | NO encontrada en: {local_path}"
+            
+            # ✅ CORRECCIÓN: Llamar a la función directamente, no con self
+            alternative_paths = find_alternative_image(incumplimiento_id, db_path)
+            if alternative_paths:
+                image_url = alternative_paths[0]
+                print(f"✅ Imagen alternativa encontrada: {image_url}")
+    
     context = {
         'incumplimiento': incumplimiento,
-        'video_url': video_url_firmada,
+        'image_url': image_url,
+        'debug_info': debug_info,
         'title': f'Incumplimiento ID: {incumplimiento_id}'
     }
     
     return render(request, 'usuarios/ver_incumplimiento.html', context)
 
+# ✅ CORRECCIÓN: Quitar el parámetro self
+def find_alternative_image(alert_id, original_path):
+    """Busca imágenes alternativas si la original no se encuentra"""
+    alertas_dir = 'media/alertas'
+    if not os.path.exists(alertas_dir):
+        return []
+    
+    # Buscar cualquier imagen que pueda corresponder a esta alerta
+    possible_files = []
+    for filename in os.listdir(alertas_dir):
+        if filename.endswith('.jpg') and str(alert_id) in filename:
+            possible_files.append(f"/media/alertas/{filename}")
+    
+    return possible_files
 
+
+def alert_list(request):
+    # Obtenemos alertas no resueltas de las últimas 24 horas
+    since = timezone.now() - timedelta(hours=24)
+    alerts = Alert.objects.filter(timestamp__gte=since, resolved=False).order_by('-timestamp')
+    
+    data = []
+    for alert in alerts:
+        data.append({
+            'id': alert.id,
+            'message': alert.message,
+            'missing': alert.missing,
+            'level': alert.get_level_display(),
+            'video_url': alert.video.url if alert.video else '',
+            'timestamp': alert.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'resolved': alert.resolved,
+            'resolution_status': alert.resolution_status,  # ✅ Nuevo campo
+            'resolved_at': alert.resolved_at.strftime('%Y-%m-%d %H:%M:%S') if alert.resolved_at else None,  # ✅ Nuevo campo
+        })
+    
+    return JsonResponse({'alerts': data})
+
+
+def alert_list_page(request):
+    context = {}
+    menu_context = MenuContextMixin().get_menu_context(request.user)
+    context['menu_list'] = menu_context
+    context['title'] = "Alertas Activas"
+    return render(request, 'usuarios/alert_list.html', context)
+
+
+
+
+
+def latest_alerts(request):
+    # Filtrar alertas de las últimas 24 horas y ordenar por las más recientes
+    time_threshold = timezone.now() - timedelta(hours=24)
+    
+    alerts = Alert.objects.filter(
+        timestamp__gte=time_threshold
+    ).order_by('-timestamp')[:10]  # Solo las 10 más recientes
+
+    alert_data = []
+    for a in alerts:
+        # Procesar elementos faltantes del campo 'missing'
+        missing_elements = []
+        if a.missing:
+            missing_elements = [elemento.strip() for elemento in a.missing.split(',')]
+        
+        alert_data.append({
+            'id': a.pk,
+            'message': a.message,
+            'missing_elements': missing_elements,
+            'timestamp': localtime(a.timestamp).strftime("%H:%M:%S %d-%m-%Y"), 
+            'video': a.video.url if a.video else None, 
+            'level': a.level,
+            'element_count': len(missing_elements),
+            'resolved': a.resolved,  # ✅ Agregar estado de resolución
+            'resolution_status': a.resolution_status or 'pending',  # ✅ Estado de resolución
+        })
+    
+    return JsonResponse({"alerts": alert_data})
+ 
+from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+import json
+
+@login_required
+@require_POST
+def resolve_alert(request, alert_id):
+    """Marca una alerta como resuelta permitiendo cambiar el nivel"""
+    alert = get_object_or_404(Alert, pk=alert_id)
+    
+    try:
+        data = json.loads(request.body)
+        resolution_status = data.get('resolution_status', 'resolved')
+        resolution_notes = data.get('resolution_notes', '')
+        new_level = data.get('new_level')  # ✅ NUEVO: Campo para cambiar nivel
+        
+        # Validar el estado de resolución
+        valid_statuses = ['resolved', 'false_positive', 'non_compliant', 'system_error']
+        if resolution_status not in valid_statuses:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Estado de resolución inválido'
+            }, status=400)
+        
+        # ✅ NUEVO: Validar y actualizar el nivel si se proporciona
+        valid_levels = ['high', 'medium', 'low', 'positive']
+        if new_level and new_level in valid_levels:
+            alert.level = new_level
+            level_updated = True
+        else:
+            level_updated = False
+        
+        # Marcar como resuelta
+        alert.resolved = True
+        alert.resolution_status = resolution_status
+        alert.resolution_notes = resolution_notes
+        alert.resolved_by = request.user
+        alert.resolved_at = timezone.now()
+        alert.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Alerta {alert_id} resuelta exitosamente',
+            'alert_id': alert_id,
+            'resolution_status': alert.resolution_status,
+            'level_updated': level_updated,
+            'new_level': alert.level if level_updated else None,
+            'resolved_at': alert.resolved_at.strftime('%Y-%m-%d %H:%M:%S') if alert.resolved_at else None
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@login_required
+def alert_statistics(request):
+    """Obtiene estadísticas de las alertas"""
+    # Alertas de las últimas 24 horas
+    since = timezone.now() - timedelta(hours=24)
+    
+    total_alerts = Alert.objects.filter(timestamp__gte=since).count()
+    unresolved_alerts = Alert.objects.filter(timestamp__gte=since, resolved=False).count()
+    resolved_alerts = Alert.objects.filter(timestamp__gte=since, resolved=True).count()
+    
+    # Estadísticas por tipo de resolución
+    resolution_stats = Alert.objects.filter(
+        timestamp__gte=since, 
+        resolved=True
+    ).values('resolution_status').annotate(
+        count=models.Count('id')
+    )
+    
+    resolution_data = {stat['resolution_status']: stat['count'] for stat in resolution_stats}
+    
+    return JsonResponse({
+        'total_alerts': total_alerts,
+        'unresolved_alerts': unresolved_alerts,
+        'resolved_alerts': resolved_alerts,
+        'resolution_stats': resolution_data,
+        'resolution_rate': (resolved_alerts / total_alerts * 100) if total_alerts > 0 else 0
+    })
+
+@login_required
+def alert_resolution_modal(request, alert_id):
+    """Devuelve el HTML del modal de resolución"""
+    alert = get_object_or_404(Alert, pk=alert_id)
+    
+    context = {
+        'alert': alert,
+        'resolution_choices': Alert.RESOLUTION_CHOICES
+    }
+    
+    return render(request, 'usuarios/resolution_modal.html', context)

@@ -675,3 +675,65 @@ class GroupModulePermissionForm(forms.ModelForm):
         help_texts = {
             'permissions': 'Selecciona los permisos que se asignarán a este grupo para el módulo.',
         }
+
+
+
+
+
+from .models import Capacitacion, Evaluacion, Pregunta, OpcionRespuesta
+
+
+class CapacitacionForm(forms.ModelForm):
+    """Formulario de creación/edición con validaciones según el tipo de contenido."""
+    class Meta:
+        model = Capacitacion
+        fields = [
+            'titulo', 'descripcion', 'tipo_contenido', 'contenido_texto',
+            'archivo_pdf', 'archivo_imagen', 'url_video',
+            'duracion_minutos', 'puntaje_minimo', 'intentos_permitidos', 'estado'
+        ]
+        widgets = {
+            'descripcion': forms.Textarea(attrs={'rows': 3}),
+            'contenido_texto': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        tipo = cleaned_data.get('tipo_contenido')
+        pdf = cleaned_data.get('archivo_pdf')
+        texto = cleaned_data.get('contenido_texto')
+        video = cleaned_data.get('url_video')
+        imagen = cleaned_data.get('archivo_imagen')
+
+        # Validaciones por tipo de contenido
+        if tipo == 'pdf' and not pdf:
+            raise forms.ValidationError("Debes subir un archivo PDF para este tipo de contenido.")
+        elif tipo == 'texto' and not texto:
+            raise forms.ValidationError("Debes ingresar contenido textual.")
+        elif tipo == 'video' and not video:
+            raise forms.ValidationError("Debes ingresar una URL de video.")
+        elif tipo == 'imagen' and not imagen:
+            raise forms.ValidationError("Debes subir una imagen para este tipo de contenido.")
+
+        return cleaned_data
+
+
+class EvaluacionForm(forms.ModelForm):
+    """Formulario para crear una evaluación de una capacitación."""
+    class Meta:
+        model = Evaluacion
+        fields = ['capacitacion', 'titulo', 'descripcion', 'activa']
+
+
+class PreguntaForm(forms.ModelForm):
+    """Formulario para agregar preguntas a una evaluación."""
+    class Meta:
+        model = Pregunta
+        fields = ['evaluacion', 'texto', 'tipo', 'puntaje', 'orden']
+
+
+class OpcionRespuestaForm(forms.ModelForm):
+    """Formulario para las opciones de una pregunta."""
+    class Meta:
+        model = OpcionRespuesta
+        fields = ['pregunta', 'texto', 'es_correcta', 'orden']

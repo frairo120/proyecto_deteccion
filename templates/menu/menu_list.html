@@ -9,73 +9,130 @@
 {% endblock %}
 
 {% block content %}
-
-<div class="content-wrapper">
-    <div class="page-header">
-        <h1 class="page-title">
-            <i class="fas fa-list-alt"></i> Listado de Menús
-        </h1>
-        <a href="{% url 'deteccion:menu_create' %}" class="btn-primary-create">
-            <i class="fas fa-plus-circle"></i>
-            <span>Crear Nuevo Menú</span>
-        </a>
+<div class="container-fluid py-4">
+    <!-- Header con título y botón -->
+    <div class="row align-items-center mb-4">
+        <div class="col-md-6">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-list-alt fa-2x text-primary me-3"></i>
+                <div>
+                    <h1 class="h3 mb-0 fw-bold">Listado de Menús</h1>
+                    <p class="text-muted mb-0">Gestiona los menús del sistema</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <a href="{% url 'deteccion:menu_create' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus-circle me-2"></i>Crear Nuevo Menú
+            </a>
+        </div>
     </div>
 
-    <div class="card">
-        <div class="card-header-filters">
-            <form method="get" class="filter-form">
-                <div class="form-control-group">
-                    <i class="fas fa-search form-icon"></i>
-                    <input type="text" name="q" placeholder="Buscar menú por nombre..." 
-                           value="{{ request.GET.q|default:"" }}" class="form-input">
+    <!-- Card principal -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <form method="get" class="d-flex gap-2">
+                        <div class="input-group flex-grow-1">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" 
+                                   name="q" 
+                                   class="form-control border-start-0" 
+                                   placeholder="Buscar menú por nombre..." 
+                                   value="{{ request.GET.q|default:'' }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>Buscar
+                        </button>
+                        {% if request.GET.q %}
+                            <a href="." class="btn btn-outline-secondary">
+                                <i class="fas fa-redo me-1"></i>Limpiar
+                            </a>
+                        {% endif %}
+                    </form>
                 </div>
-                
-                <button type="submit" class="btn-filter">
-                    <i class="fas fa-search"></i> Buscar
-                </button>
-                {% if request.GET.q %}
-                    <a href="." class="btn-reset">
-                        <i class="fas fa-redo"></i> Limpiar
-                    </a>
-                {% endif %}
-            </form>
+                <div class="col-md-4 text-md-end">
+                    <span class="badge bg-light text-dark fs-6">
+                        <i class="fas fa-utensils me-1"></i>{{ menus|length }} menús
+                    </span>
+                </div>
+            </div>
         </div>
 
-        <div class="card-body">
-            <div class="table-container">
-                <table class="menu-table">
-                    <thead>
+        <div class="card-body p-0">
+            <!-- Tabla responsive -->
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
                         <tr>
-                            <th class="name-column">Nombre</th>
-                            <th class="icon-column">Ícono</th>
-                            <th class="order-column text-center">Orden</th>
-                            <th class="actions-column text-center">Acciones</th>
+                            <th class="ps-4">
+                                <i class="fas fa-font me-1 text-muted"></i>Nombre
+                            </th>
+                            <th>
+                                <i class="fas fa-icons me-1 text-muted"></i>Ícono
+                            </th>
+                            <th class="text-center">
+                                <i class="fas fa-sort-numeric-down me-1 text-muted"></i>Orden
+                            </th>
+                            <th class="text-center pe-4">
+                                <i class="fas fa-cogs me-1 text-muted"></i>Acciones
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for menu in menus %}
-                        <tr class="menu-row">
-                            <td class="fw-bold">{{ menu.name }}</td>
-                            <td class="text-muted">
-                                <i class="{{ menu.icon }} fa-lg menu-icon-preview"></i> 
-                                <span class="d-none d-sm-inline">{{ menu.icon }}</span>
+                        <tr class="border-bottom">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
+                                        <i class="{{ menu.icon }} text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 fw-bold">{{ menu.name }}</h6>
+                                        <small class="text-muted">ID: {{ menu.id }}</small>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="text-center">{{ menu.order }}</td>
-                            <td class="text-center actions">
-                                <a href="{% url 'deteccion:menu_editar' menu.id %}" 
-                                   class="action-btn edit-btn" title="Editar Menú">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{% url 'deteccion:menu_eliminar' menu.id %}" 
-                                   class="action-btn delete-btn" title="Eliminar Menú">
-                                    <i class="fas fa-trash-alt"></i>
-                                </a>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <i class="{{ menu.icon }} fa-lg text-success me-2"></i>
+                                    <code class="text-muted d-none d-md-inline">{{ menu.icon }}</code>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-primary rounded-pill fs-6 px-3">{{ menu.order }}</span>
+                            </td>
+                            <td class="text-center pe-4">
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'deteccion:menu_editar' menu.id %}" 
+                                       class="btn btn-outline-primary btn-sm" 
+                                       title="Editar Menú"
+                                       data-bs-toggle="tooltip">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'deteccion:menu_eliminar' menu.id %}" 
+                                       class="btn btn-outline-danger btn-sm" 
+                                       title="Eliminar Menú"
+                                       data-bs-toggle="tooltip">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="empty-row">
-                                <i class="fas fa-utensils"></i> No se encontraron menús registrados.
+                            <td colspan="4" class="text-center py-5">
+                                <div class="empty-state">
+                                    <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">No se encontraron menús registrados</h5>
+                                    <p class="text-muted mb-4">Comienza creando tu primer menú en el sistema</p>
+                                    <a href="{% url 'deteccion:menu_create' %}" class="btn btn-primary">
+                                        <i class="fas fa-plus-circle me-2"></i>Crear Primer Menú
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -83,6 +140,55 @@
                 </table>
             </div>
         </div>
+
+        <!-- Paginación (si es necesario) -->
+        {% if menus.has_other_pages %}
+        <div class="card-footer bg-white">
+            <nav aria-label="Paginación de menús">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if menus.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ menus.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in menus.paginator.page_range %}
+                        {% if menus.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if menus.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ menus.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Inicializar tooltips de Bootstrap
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
 {% endblock %}

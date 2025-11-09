@@ -5,44 +5,423 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{% static 'css/form_general.css' %}">
+    <style>
+        .alert-header {
+            background: linear-gradient(135deg, #6d767e 0%, #6d767e 100%);
+            color: white;
+            border-radius: 12px 12px 0 0;
+            padding: 20px;  
+            margin-bottom: 0;
+        }
+        .image-container {
+            max-width: 100%;
+            text-align: center;
+            margin: 25px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px dashed #dee2e6;
+        }
+        .alert-image {
+            max-width: 90%;
+            max-height: 550px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border: 4px solid #fff;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .alert-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+        }
+        .details-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 6px solid #6d767e;
+        }
+        .info-badge {
+            font-size: 0.85em;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .level-badge {
+            font-size: 0.9em;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 25px;
+        }
+        .btn-custom {
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+        }
+        .btn-download {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .btn-download:hover {
+            background: linear-gradient(135deg, #218838 0%, #1e9e8a 100%);
+            color: white;
+        }
+        .btn-open {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+        }
+        .btn-open:hover {
+            background: linear-gradient(135deg, #6d767e 0%, #004085 100%);
+            color: white;
+        }
+        .btn-back {
+            background: linear-gradient(135deg, #6d767e 0%, #495057 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-back:hover {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+        .detail-item {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #6d767e;
+            transition: transform 0.2s ease;
+        }
+        .detail-item:hover {
+            transform: translateX(5px);
+        }
+        .detail-item.missing {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #fff5f5 0%, #ffe6e6 100%);
+        }
+        .detail-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.3em;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .icon-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        .icon-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: white;
+        }
+        .icon-info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+        .evidence-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .evidence-header {
+            background: linear-gradient(135deg, #6d767e 0%, #0056b3 100%);
+            color: white;
+            padding: 20px;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+        .no-evidence {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px dashed #ffc107;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+        }
+        .debug-info {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            margin: 15px 0;
+            border-left: 4px solid #6c757d;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .alert-id {
+            background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
 <div class="content-area">
-    <div class="container mt-5">
-        <h1>{{ title }}</h1>
-
-        <div class="card mb-4">
-            <div class="card-body">
-                <h3>Detalles del Incumplimiento</h3>
-                <p><strong>Fecha/Hora:</strong> {{ incumplimiento.timestamp|date:"Y-m-d H:i:s" }}</p>
-                <p><strong>Tipo de Incumplimiento:</strong> {{ incumplimiento.tipo_alerta }}</p>
+    <div class="container mt-4">
+        <!-- Header con ID de Alerta -->
+        <div class="alert-header text-center mb-4">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="mb-2">
+                        <i class="fas fa-exclamation-triangle me-3"></i>
+                        Detalles de la Alerta
+                    </h1>
+                    <div class="alert-id d-inline-block">
+                        <i class="fas fa-hashtag me-2"></i>ID: {{ incumplimiento.id }}
+                    </div>
                 </div>
+            </div>
         </div>
 
-        <div class="card video-card">
-            <div class="card-header">
-                <i class="fas fa-video"></i> Evidencia en Video
-            </div>
-            <div class="card-body video-embed-container">
-                
-                {% if video_url %}
-                    <video controls class="video-reproductor">
-                        <source src="{{ video_url }}" type="video/mp4"> 
-                        Tu navegador no soporta la etiqueta de video.
-                    </video>
-                {% else %}
-                    <p class="text-danger">No se pudo cargar la evidencia de video.</p>
+        <!-- Información de debug (solo en desarrollo) -->
+        {% if debug_info %}
+        <div class="debug-info">
+            <i class="fas fa-bug me-2"></i><strong>DEBUG:</strong> {{ debug_info }}
+        </div>
+        {% endif %}
+
+        <!-- Tarjeta de detalles principales -->
+        <div class="card details-card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <!-- Columna Izquierda - Información General -->
+                    <div class="col-lg-6">
+                        <div class="detail-item">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="detail-icon icon-danger">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Fecha y Hora</h5>
+                                    <p class="timestamp mb-0">
+                                        <i class="fas fa-clock me-2"></i>
+                                        {{ incumplimiento.timestamp|date:"d/m/Y H:i:s" }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="detail-icon icon-warning">
+                                    <i class="fas fa-comment-alt"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Mensaje de Alerta</h5>
+                                    <p class="mb-0 text-dark fw-semibold">
+                                        {{ incumplimiento.message }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha - Estado y Elementos -->
+                    <div class="col-lg-6">
+                        <div class="detail-item missing">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="detail-icon icon-danger">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Elemento Faltante</h5>
+                                    <p class="mb-0">
+                                        {% if incumplimiento.missing %}
+                                            <span class="info-badge bg-danger text-white">
+                                                <i class="fas fa-exclamation-circle me-2"></i>
+                                                {{ incumplimiento.missing }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">No especificado</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="detail-item">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="detail-icon icon-info">
+                                    <i class="fas fa-signal"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Nivel de Gravedad</h5>
+                                    <p class="mb-0">
+                                        <span class="level-badge 
+                                            {% if incumplimiento.level == 'high' %}bg-danger
+                                            {% elif incumplimiento.level == 'medium' %}bg-warning text-dark
+                                            {% else %}bg-info{% endif %}">
+                                            <i class="fas 
+                                                {% if incumplimiento.level == 'high' %}fa-fire
+                                                {% elif incumplimiento.level == 'medium' %}fa-exclamation-triangle
+                                                {% else %}fa-info-circle{% endif %} me-2">
+                                            </i>
+                                            {{ incumplimiento.get_level_display }}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información del archivo -->
+                {% if incumplimiento.video %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="detail-item">
+                            <div class="d-flex align-items-center">
+                                <div class="detail-icon icon-info">
+                                    <i class="fas fa-file-image"></i>
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">Archivo de Evidencia</h5>
+                                    <p class="mb-0">
+                                        <code class="bg-light p-2 rounded">{{ incumplimiento.video.name }}</code>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% endif %}
-                
             </div>
         </div>
 
-        <div class="mt-4">
-            <a href="{% url 'deteccion:alert_list' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left"></i> Volver a la lista
+        <!-- Tarjeta de evidencia en imagen -->
+        <div class="card evidence-card mb-4">
+            <div class="evidence-header">
+                <i class="fas fa-camera me-2"></i>Evidencia en Imagen
+            </div>
+            <div class="card-body p-4">
+                {% if image_url %}
+                    <div class="image-container">
+                        <img src="{{ image_url }}" 
+                             alt="Evidencia de la alerta - {{ incumplimiento.message }}" 
+                             class="alert-image"
+                             onerror="this.onerror=null; this.style.display='none'; document.getElementById('error-message').style.display='block';">
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="action-buttons">
+                        <a href="{{ image_url }}" 
+                           target="_blank" 
+                           class="btn btn-custom btn-download"
+                           download="evidencia_{{ incumplimiento.id }}_{{ incumplimiento.timestamp|date:'Ymd_His' }}.jpg">
+                            <i class="fas fa-download"></i> Descargar Imagen
+                        </a>
+                        
+                        <a href="{{ image_url }}" 
+                           target="_blank" 
+                           class="btn btn-custom btn-open">
+                            <i class="fas fa-external-link-alt"></i> Abrir en Nueva Pestaña
+                        </a>
+                    </div>
+                    
+                    <!-- Mensaje de error oculto -->
+                    <div id="error-message" class="alert alert-danger mt-4 text-center" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Error:</strong> No se pudo cargar la imagen. La URL puede ser incorrecta o el archivo no está disponible.
+                    </div>
+                    
+                {% else %}
+                    <div class="no-evidence">
+                        <div class="mb-3">
+                            <i class="fas fa-image fa-3x text-warning mb-3"></i>
+                            <h4 class="text-warning">No hay evidencia visual disponible</h4>
+                        </div>
+                        <p class="text-muted mb-3">
+                            No se encontró una imagen asociada a esta alerta en el sistema.
+                        </p>
+                        {% if incumplimiento.video %}
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Ruta esperada: <code>{{ incumplimiento.video.name }}</code>
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Botón de volver -->
+        <div class="text-center mt-4">
+            <a href="{% url 'deteccion:alert_list' %}" class="btn btn-back">
+                <i class="fas fa-arrow-left me-2"></i> Volver a la Lista de Alertas
             </a>
         </div>
     </div>
 </div>
+
+<script>
+    // Verificar carga de imagen con mejor feedback
+    document.addEventListener('DOMContentLoaded', function() {
+        const img = document.querySelector('.alert-image');
+        const errorMsg = document.getElementById('error-message');
+        
+        if (img) {
+            // Mostrar loader temporalmente
+            const originalSrc = img.src;
+            img.style.opacity = '0.7';
+            
+            // Verificar después de que la imagen debería haber cargado
+            setTimeout(function() {
+                if (img.naturalHeight === 0) {
+                    console.log("❌ Imagen no cargó correctamente");
+                    img.style.display = 'none';
+                    if (errorMsg) {
+                        errorMsg.style.display = 'block';
+                        errorMsg.innerHTML = `
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Error de carga:</strong> No se pudo cargar la imagen desde:<br>
+                            <small><code>${originalSrc}</code></small>
+                        `;
+                    }
+                } else {
+                    console.log("✅ Imagen cargada correctamente");
+                    img.style.opacity = '1';
+                }
+            }, 2000);
+        }
+    });
+</script>
 {% endblock %}

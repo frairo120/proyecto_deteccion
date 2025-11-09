@@ -1,0 +1,845 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Panel del Trabajador - Sistema de Capacitación{% endblock %}
+
+{% block content %}
+<div class="dashboard-content">
+    <!-- Header y Bienvenida -->
+    <div class="content-header">
+        <div class="header-main">
+            <h1>¡Bienvenido, {{ user.get_full_name|default:user.username }}!</h1>
+            <p>Tu centro de aprendizaje y desarrollo profesional</p>
+        </div>
+        <div class="header-date">
+            <i class="fas fa-calendar"></i>
+            {{ current_date|date:"d F Y" }}
+        </div>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon primary">
+                <i class="fas fa-book-open"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ total_capacitaciones }}</h3>
+                <p>Disponibles</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ capacitaciones_completadas }}</h3>
+                <p>Completadas</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ certificados.count }}</h3>
+                <p>Certificados</p>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-icon info">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-info">
+                <h3>{{ porcentaje_progreso|floatformat:0 }}%</h3>
+                <p>Progreso General</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ porcentaje_progreso }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content-layout">
+        <!-- Capacitaciones Disponibles -->
+        <div class="main-section">
+            <div class="section-card">
+                <div class="section-header">
+                    <h2><i class="fas fa-book-open"></i> Capacitaciones Disponibles</h2>
+                    <span class="badge">{{ capacitaciones_con_progreso|length }}</span>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Capacitación</th>
+                                <th>Dificultad</th>
+                                <th>Duración</th>
+                                <th>Progreso</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in capacitaciones_con_progreso %}
+                            {% with capacitacion=item.capacitacion progreso=item.progreso %}
+                            <tr>
+                                <td class="capacitacion-info">
+                                    <div class="info-container">
+                                        <div class="capacitacion-icon">
+                                            <i class="fas fa-{% if capacitacion.tipo_contenido == 'video' %}video{% elif capacitacion.tipo_contenido == 'pdf' %}file-pdf{% elif capacitacion.tipo_contenido == 'imagen' %}image{% else %}file-alt{% endif %}"></i>
+                                        </div>
+                                        <div class="capacitacion-details">
+                                            <strong>{{ capacitacion.titulo }}</strong>
+                                            <span>{{ capacitacion.descripcion|truncatewords:10 }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="dificultad-badge {{ capacitacion.dificultad }}">
+                                        {{ capacitacion.get_dificultad_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if capacitacion.duracion %}
+                                        {{ capacitacion.duracion }} min
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if progreso %}
+                                        <div class="progress-container">
+                                            <div class="progress-header">
+                                                <span>{{ progreso.porcentaje_completado }}%</span>
+                                            </div>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill {{ progreso.completada|yesno:'completed,progress' }}" 
+                                                     style="width: {{ progreso.porcentaje_completado }}%"></div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <span class="no-progress">No iniciada</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="{% url 'deteccion:detalle_capacitacion' capacitacion.id %}" 
+                                           class="btn btn-view" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if not progreso %}
+                                            <button class="btn btn-start iniciar-capacitacion" 
+                                                    data-capacitacion-id="{{ capacitacion.id }}"
+                                                    title="Comenzar capacitación">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                        {% elif not progreso.completada %}
+                                            <button class="btn btn-progress actualizar-progreso" 
+                                                    data-capacitacion-id="{{ capacitacion.id }}"
+                                                    data-porcentaje-actual="{{ progreso.porcentaje_completado }}"
+                                                    title="Avanzar progreso">
+                                                <i class="fas fa-forward"></i>
+                                            </button>
+                                        {% else %}
+                                            <span class="completed-badge">Completada</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endwith %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    <i class="fas fa-book-open"></i>
+                                    <h4>No hay capacitaciones disponibles</h4>
+                                    <p>Pronto se publicarán nuevas capacitaciones</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar con Progreso y Certificados -->
+        <div class="sidebar-section">
+            <!-- Mi Progreso Detallado -->
+            <div class="side-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-line"></i> Mi Progreso Detallado</h3>
+                </div>
+                <div class="card-content">
+                    {% for progreso in progresos %}
+                    <div class="progress-item">
+                        <div class="progress-main">
+                            <h4>{{ progreso.capacitacion.titulo }}</h4>
+                            <div class="progress-container">
+                                <div class="progress-header">
+                                    <span>{{ progreso.porcentaje_completado }}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill {{ progreso.completada|yesno:'completed,progress' }}" 
+                                         style="width: {{ progreso.porcentaje_completado }}%"></div>
+                                </div>
+                            </div>
+                            <div class="progress-meta">
+                                <i class="fas fa-clock"></i>
+                                {% if progreso.tiempo_invertido %}
+                                    {{ progreso.tiempo_invertido }} min invertidos
+                                {% else %}
+                                    Recién iniciada
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="progress-action">
+                            {% if progreso.completada %}
+                                <i class="fas fa-check-circle completed"></i>
+                            {% else %}
+                                <button class="btn btn-small actualizar-progreso-sidebar"
+                                        data-capacitacion-id="{{ progreso.capacitacion.id }}"
+                                        data-porcentaje-actual="{{ progreso.porcentaje_completado }}">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <i class="fas fa-chart-line"></i>
+                        <h4>No hay progreso registrado</h4>
+                        <p>Comienza una capacitación para ver tu progreso</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Certificados Obtenidos -->
+            <div class="side-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-award"></i> Mis Certificados</h3>
+                </div>
+                <div class="card-content">
+                    {% for certificado in certificados %}
+                    <div class="certificado-item">
+                        <div class="certificado-icon">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <div class="certificado-info">
+                            <strong>{{ certificado.capacitacion.titulo }}</strong>
+                            <div class="certificado-meta">
+                                <span><i class="fas fa-calendar"></i> {{ certificado.fecha_emision|date:"d M Y" }}</span>
+                                <span><i class="fas fa-hashtag"></i> {{ certificado.codigo_verificacion|slice:":12" }}...</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-small ver-certificado"
+                                data-certificado-id="{{ certificado.id }}"
+                                title="Ver certificado">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <i class="fas fa-award"></i>
+                        <h4>No hay certificados</h4>
+                        <p>Completa capacitaciones para obtener certificados</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Container -->
+<div id="alertContainer" class="alert-container"></div>
+
+<style>
+/* Estilos para el panel del trabajador */
+.dashboard-content {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    color: white;
+}
+
+.header-main h1 {
+    margin: 0 0 5px 0;
+    font-size: 1.8em;
+}
+
+.header-main p {
+    margin: 0;
+    opacity: 0.9;
+}
+
+.header-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.1em;
+}
+
+/* Estadísticas */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    color: white;
+}
+
+.stat-icon.primary { background: #667eea; }
+.stat-icon.success { background: #4CAF50; }
+.stat-icon.warning { background: #FF9800; }
+.stat-icon.info { background: #2196F3; }
+
+.stat-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+.stat-info p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9em;
+}
+
+/* Layout Principal */
+.content-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+/* Tabla de Capacitaciones */
+.section-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-header h2 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.3em;
+}
+
+.badge {
+    background: #667eea;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background: #f8f9fa;
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #eee;
+}
+
+.data-table td {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.data-table tr:hover {
+    background: #f8f9fa;
+}
+
+/* Información de capacitación */
+.capacitacion-info .info-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.capacitacion-icon {
+    width: 40px;
+    height: 40px;
+    background: #f0f2f5;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #667eea;
+}
+
+.capacitacion-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.capacitacion-details strong {
+    margin-bottom: 4px;
+}
+
+.capacitacion-details span {
+    font-size: 0.85em;
+    color: #666;
+}
+
+/* Badges de dificultad */
+.dificultad-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.dificultad-badge.facil { background: #e8f5e8; color: #2e7d32; }
+.dificultad-badge.medio { background: #fff3e0; color: #ef6c00; }
+.dificultad-badge.dificil { background: #ffebee; color: #c62828; }
+
+/* Progress bars */
+.progress-container {
+    width: 100%;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 0.85em;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.progress-fill.progress { background: #2196F3; }
+.progress-fill.completed { background: #4CAF50; }
+
+/* Botones de acción */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-view { background: #667eea; color: white; }
+.btn-start { background: #4CAF50; color: white; }
+.btn-progress { background: #FF9800; color: white; }
+.btn-small { padding: 6px 10px; font-size: 0.8em; }
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.completed-badge {
+    background: #4CAF50;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+}
+
+/* Sidebar Cards */
+.side-card {
+    background: white;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.side-card .card-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.side-card .card-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1em;
+}
+
+.side-card .card-content {
+    padding: 20px;
+}
+
+/* Progress Items */
+.progress-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.progress-item:last-child {
+    border-bottom: none;
+}
+
+.progress-main {
+    flex: 1;
+}
+
+.progress-main h4 {
+    margin: 0 0 10px 0;
+    font-size: 0.95em;
+}
+
+.progress-meta {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.progress-action .completed {
+    color: #4CAF50;
+    font-size: 1.2em;
+}
+
+/* Certificados */
+.certificado-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.certificado-item:last-child {
+    border-bottom: none;
+}
+
+.certificado-icon {
+    color: #FF9800;
+    font-size: 1.5em;
+}
+
+.certificado-info {
+    flex: 1;
+}
+
+.certificado-info strong {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+}
+
+.certificado-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.certificado-meta span {
+    font-size: 0.8em;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Estados vacíos */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.empty-state i {
+    font-size: 3em;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-state h4 {
+    margin: 0 0 10px 0;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 0.9em;
+}
+
+/* Alert Container */
+.alert-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    max-width: 400px;
+}
+
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.alert-success {
+    background: #4CAF50;
+    color: white;
+}
+
+.alert-error {
+    background: #f44336;
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .content-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .content-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Función para mostrar alertas
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+        
+        const alertHtml = `
+            <div class="alert ${alertClass}">
+                <i class="fas ${icon}"></i>
+                ${message}
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()" style="margin-left: auto; background: none; border: none; color: white; cursor: pointer;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        const container = document.getElementById('alertContainer');
+        container.innerHTML = alertHtml;
+        
+        // Auto-remover después de 5 segundos
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 5000);
+    }
+
+    // Función para actualizar progreso
+    function actualizarProgreso(capacitacionId, accion, datosAdicionales = {}) {
+        const url = `/inicio/capacitacion/${capacitacionId}/actualizar-progreso/`;
+        const datos = {
+            accion: accion,
+            ...datosAdicionales
+        };
+
+        // Mostrar loading
+        const botones = document.querySelectorAll(`[data-capacitacion-id="${capacitacionId}"]`);
+        botones.forEach(btn => {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+            
+            // Restaurar después de 2 segundos si hay error
+            setTimeout(() => {
+                if (btn.disabled) {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            }, 2000);
+        });
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(datos)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.mensaje);
+                // Recargar la página después de un breve delay
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showAlert('error', data.error || 'Error al actualizar progreso');
+                botones.forEach(btn => {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.querySelector('i').className.includes('fa-play') ? '<i class="fas fa-play"></i>' : 
+                                   btn.querySelector('i').className.includes('fa-forward') ? '<i class="fas fa-forward"></i>' : 
+                                   '<i class="fas fa-plus"></i>';
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Error de conexión');
+            botones.forEach(btn => {
+                btn.disabled = false;
+                btn.innerHTML = btn.querySelector('i').className.includes('fa-play') ? '<i class="fas fa-play"></i>' : 
+                               btn.querySelector('i').className.includes('fa-forward') ? '<i class="fas fa-forward"></i>' : 
+                               '<i class="fas fa-plus"></i>';
+            });
+        });
+    }
+
+    // Event listeners para botones de iniciar capacitación
+    document.querySelectorAll('.iniciar-capacitacion').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const capacitacionId = this.getAttribute('data-capacitacion-id');
+            actualizarProgreso(capacitacionId, 'marcar_iniciada');
+        });
+    });
+
+    // Event listeners para botones de actualizar progreso
+    document.querySelectorAll('.actualizar-progreso').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const capacitacionId = this.getAttribute('data-capacitacion-id');
+            const porcentajeActual = parseInt(this.getAttribute('data-porcentaje-actual'));
+            const nuevoPorcentaje = Math.min(porcentajeActual + 25, 100);
+            
+            if (nuevoPorcentaje === 100) {
+                actualizarProgreso(capacitacionId, 'completar');
+            } else {
+                actualizarProgreso(capacitacionId, 'actualizar_porcentaje', { 
+                    porcentaje: nuevoPorcentaje 
+                });
+            }
+        });
+    });
+
+    // Event listeners para botones de actualizar progreso en sidebar
+    document.querySelectorAll('.actualizar-progreso-sidebar').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const capacitacionId = this.getAttribute('data-capacitacion-id');
+            const porcentajeActual = parseInt(this.getAttribute('data-porcentaje-actual'));
+            const nuevoPorcentaje = Math.min(porcentajeActual + 25, 100);
+            
+            if (nuevoPorcentaje === 100) {
+                actualizarProgreso(capacitacionId, 'completar');
+            } else {
+                actualizarProgreso(capacitacionId, 'actualizar_porcentaje', { 
+                    porcentaje: nuevoPorcentaje 
+                });
+            }
+        });
+    });
+
+    // Event listeners para botones de ver certificado
+    document.querySelectorAll('.ver-certificado').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const certificadoId = this.getAttribute('data-certificado-id');
+            // Redirigir a la vista de certificado
+            window.location.href = `/inicio/certificados/${certificadoId}/`;
+        });
+    });
+});
+</script>
+{% endblock %}

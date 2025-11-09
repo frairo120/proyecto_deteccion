@@ -1,0 +1,976 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ capacitacion.titulo }} - Sistema de Capacitación{% endblock %}
+
+{% block content %}
+<div class="dashboard-content">
+    <!-- Header de la Capacitación -->
+    <div class="content-header">
+        <div class="header-main">
+            <h1>{{ capacitacion.titulo }}</h1>
+            <p>{{ capacitacion.descripcion }}</p>
+        </div>
+        <div class="header-badges">
+            <span class="badge {{ capacitacion.estado }}">
+                {{ capacitacion.get_estado_display }}
+            </span>
+            <span class="badge info">
+                <i class="fas fa-clock"></i>
+                {% if capacitacion.duracion %}
+                    {{ capacitacion.duracion }} minutos
+                {% else %}
+                    Duración variable
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="content-layout">
+        <!-- Contenido Principal -->
+        <div class="main-section">
+            <!-- Información General -->
+            <div class="section-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-info-circle"></i> Información de la Capacitación</h2>
+                </div>
+                <div class="card-content">
+                    <div class="info-grid">
+                        <div class="info-column">
+                            <h3>Detalles</h3>
+                            <ul class="info-list">
+                                <li>
+                                    <i class="fas fa-calendar"></i>
+                                    <strong>Creada:</strong> {{ capacitacion.fecha_creacion|date:"d M Y" }}
+                                </li>
+                                <li>
+                                    <i class="fas fa-{% if capacitacion.tipo_contenido == 'video' %}video{% elif capacitacion.tipo_contenido == 'pdf' %}file-pdf{% elif capacitacion.tipo_contenido == 'imagen' %}image{% else %}file-alt{% endif %}"></i>
+                                    <strong>Tipo:</strong> {{ capacitacion.get_tipo_contenido_display }}
+                                </li>
+                                <li>
+                                    <i class="fas fa-signal"></i>
+                                    <strong>Dificultad:</strong> 
+                                    <span class="dificultad-badge {{ capacitacion.dificultad }}">
+                                        {{ capacitacion.get_dificultad_display }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="info-column">
+                            <h3>Requisitos</h3>
+                            {% if capacitacion.requisitos_previos %}
+                                <p>{{ capacitacion.requisitos_previos }}</p>
+                            {% else %}
+                                <p class="text-muted">No se requieren conocimientos previos</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Objetivos de Aprendizaje -->
+                    {% if capacitacion.objetivos_aprendizaje %}
+                    <div class="objetivos-section">
+                        <h3><i class="fas fa-bullseye"></i> Objetivos de Aprendizaje</h3>
+                        <div class="objetivos-content">
+                            {{ capacitacion.objetivos_aprendizaje|linebreaks }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Contenido de la Capacitación -->
+            <div class="section-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-play-circle"></i> Contenido de la Capacitación</h2>
+                </div>
+                <div class="card-content">
+                    {% if capacitacion.contenido %}
+                        <div class="content-area">
+                            {{ capacitacion.contenido|safe }}
+                        </div>
+                    {% else %}
+                        <div class="empty-content">
+                            <i class="fas fa-file-alt"></i>
+                            <h3>Contenido en desarrollo</h3>
+                            <p>El contenido de esta capacitación estará disponible pronto.</p>
+                        </div>
+                    {% endif %}
+
+                    <!-- Reproductor de Video -->
+                    {% if capacitacion.url_video %}
+                    <div class="video-section">
+                        <h3><i class="fas fa-video"></i> Video de la Capacitación</h3>
+                        <div class="video-container">
+                            <iframe src="{{ capacitacion.url_video }}" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Documentos Adjuntos -->
+                    {% if capacitacion.archivo_adjunto %}
+                    <div class="document-section">
+                        <h3><i class="fas fa-paperclip"></i> Material de Apoyo</h3>
+                        <div class="document-item">
+                            <div class="document-icon">
+                                <i class="fas fa-file-{% if capacitacion.archivo_adjunto.name|lower|slice:'-4:' == '.pdf' %}pdf{% else %}download{% endif %}"></i>
+                            </div>
+                            <div class="document-info">
+                                <strong>Documento Adjunto</strong>
+                                <span>{{ capacitacion.archivo_adjunto.name|slice:"6:" }}</span>
+                            </div>
+                            <a href="{{ capacitacion.archivo_adjunto.url }}" class="btn btn-primary" download>
+                                <i class="fas fa-download"></i> Descargar
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Evaluación -->
+            {% if capacitacion.evaluacion and capacitacion.evaluacion.activa %}
+            <div class="section-card evaluation-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-clipboard-check"></i> Evaluación</h2>
+                </div>
+                <div class="card-content">
+                    <div class="evaluation-info">
+                        <h3>{{ capacitacion.evaluacion.titulo }}</h3>
+                        <p>{{ capacitacion.evaluacion.descripcion }}</p>
+                        <div class="evaluation-meta">
+                            <span><i class="fas fa-question-circle"></i> {{ capacitacion.evaluacion.preguntas.count }} preguntas</span>
+                            <span><i class="fas fa-percentage"></i> Puntaje mínimo: {{ capacitacion.evaluacion.puntaje_minimo }}%</span>
+                        </div>
+                    </div>
+                    
+                    {% if not intento_evaluacion or not intento_evaluacion.aprobado %}
+                    <div class="evaluation-actions">
+                        <a href="{% url 'deteccion:realizar_evaluacion' capacitacion.evaluacion.id %}" 
+                           class="btn btn-warning btn-large">
+                            <i class="fas fa-play"></i>
+                            {% if intento_evaluacion %}
+                                Reintentar Evaluación
+                            {% else %}
+                                Realizar Evaluación
+                            {% endif %}
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Historial de Intentos -->
+                    {% if intentos_evaluacion %}
+                    <div class="attempts-history">
+                        <h3>Historial de Intentos</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Puntaje</th>
+                                        <th>Resultado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for intento in intentos_evaluacion %}
+                                    <tr>
+                                        <td>{{ intento.fecha_intento|date:"d/m/Y H:i" }}</td>
+                                        <td>{{ intento.puntaje_obtenido }}%</td>
+                                        <td>
+                                            <span class="result-badge {{ intento.aprobado|yesno:'aprobado,reprobado' }}">
+                                                {% if intento.aprobado %}Aprobado{% else %}No Aprobado{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'deteccion:ver_resultado_evaluacion' intento.id %}" 
+                                               class="btn btn-small">
+                                                Ver Detalles
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar-section">
+            <!-- Progreso del Usuario -->
+           
+
+            <!-- Acciones Rápidas -->
+            
+
+            <!-- Información del Instructor -->
+            {% if capacitacion.creado_por %}
+            <div class="side-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-tie"></i> Instructor</h3>
+                </div>
+                <div class="card-content">
+                    <div class="instructor-info">
+                        <div class="instructor-avatar">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="instructor-details">
+                            <strong>{{ capacitacion.creado_por.get_full_name|default:capacitacion.creado_por.username }}</strong>
+                            <span>Instructor</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Estadísticas de la Capacitación -->
+            <div class="side-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-bar"></i> Estadísticas</h3>
+                </div>
+                <div class="card-content">
+                    <div class="stats-list">
+                        <div class="stat-item">
+                            <span>Total de estudiantes:</span>
+                            <strong>{{ total_estudiantes }}</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Completadas:</span>
+                            <strong>{{ completadas_count }}</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span>Tasa de finalización:</span>
+                            <strong>
+                                {% if total_estudiantes > 0 %}
+                                    {{ tasa_finalizacion|floatformat:1 }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Container -->
+<div id="alertContainer" class="alert-container"></div>
+
+<style>
+/* Estilos para detalle de capacitación */
+.dashboard-content {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    padding: 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.header-main h1 {
+    margin: 0 0 10px 0;
+    font-size: 2em;
+}
+
+.header-main p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1.1em;
+}
+
+.header-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+.badge.publicada { background: #4CAF50; color: white; }
+.badge.borrador { background: #FF9800; color: white; }
+.badge.archivada { background: #9E9E9E; color: white; }
+.badge.info { background: #2196F3; color: white; }
+
+/* Layout Principal */
+.content-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 30px;
+}
+
+/* Cards Generales */
+.section-card, .side-card {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card-header h2, .card-header h3 {
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.card-header.primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.card-content {
+    padding: 25px;
+}
+
+/* Información General */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.info-column h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.1em;
+}
+
+.info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.info-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 8px 0;
+}
+
+.info-list li i {
+    width: 20px;
+    color: #667eea;
+}
+
+.dificultad-badge {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.dificultad-badge.facil { background: #e8f5e8; color: #2e7d32; }
+.dificultad-badge.medio { background: #fff3e0; color: #ef6c00; }
+.dificultad-badge.dificil { background: #ffebee; color: #c62828; }
+
+.objetivos-section {
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid #eee;
+}
+
+.objetivos-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.objetivos-content {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    line-height: 1.6;
+}
+
+/* Contenido */
+.content-area {
+    line-height: 1.7;
+}
+
+.content-area h1, .content-area h2, .content-area h3, 
+.content-area h4, .content-area h5, .content-area h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.content-area p {
+    margin-bottom: 1rem;
+}
+
+.content-area ul, .content-area ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+}
+
+.content-area blockquote {
+    border-left: 4px solid #667eea;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    font-style: italic;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 0 8px 8px 0;
+}
+
+.empty-content {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.empty-content i {
+    font-size: 4em;
+    margin-bottom: 20px;
+    opacity: 0.5;
+}
+
+.empty-content h3 {
+    margin: 0 0 10px 0;
+}
+
+.empty-content p {
+    margin: 0;
+}
+
+/* Video */
+.video-section {
+    margin-top: 25px;
+}
+
+.video-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+}
+
+/* Documentos */
+.document-section {
+    margin-top: 25px;
+}
+
+.document-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.document-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.document-icon {
+    font-size: 2em;
+    color: #f44336;
+}
+
+.document-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.document-info strong {
+    margin-bottom: 5px;
+}
+
+.document-info span {
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* Evaluación */
+.evaluation-card {
+    border-left: 4px solid #FF9800;
+}
+
+.evaluation-info {
+    background: #e3f2fd;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.evaluation-info h3 {
+    margin: 0 0 10px 0;
+    color: #1976d2;
+}
+
+.evaluation-meta {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.evaluation-meta span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9em;
+}
+
+.evaluation-actions {
+    text-align: center;
+    margin: 25px 0;
+}
+
+.attempts-history {
+    margin-top: 25px;
+}
+
+.attempts-history h3 {
+    margin-bottom: 15px;
+}
+
+/* Progress */
+.progress-display {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.radial-progress {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: #e0e0e0;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.radial-progress::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    background: white;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.progress-text {
+    position: relative;
+    z-index: 2;
+    font-size: 1.5em;
+    font-weight: bold;
+}
+
+.progress-status {
+    margin-top: 10px;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.status-badge.completed { background: #4CAF50; color: white; }
+.status-badge.progress { background: #FF9800; color: white; }
+
+.progress-details {
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.empty-progress {
+    text-align: center;
+    padding: 30px 20px;
+    color: #666;
+}
+
+.empty-progress i {
+    font-size: 3em;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-progress h4 {
+    margin: 0 0 15px 0;
+}
+
+/* Botones */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+}
+
+.btn-primary { background: #667eea; color: white; }
+.btn-success { background: #4CAF50; color: white; }
+.btn-warning { background: #FF9800; color: white; }
+.btn-secondary { background: #6c757d; color: white; }
+.btn-large { padding: 15px 25px; font-size: 1.1em; }
+.btn-small { padding: 8px 12px; font-size: 0.9em; }
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Instructor */
+.instructor-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.instructor-avatar {
+    font-size: 2.5em;
+    color: #9E9E9E;
+}
+
+.instructor-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.instructor-details strong {
+    margin-bottom: 5px;
+}
+
+.instructor-details span {
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* Tablas */
+.table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background: #f8f9fa;
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.data-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.data-table tr:hover {
+    background: #f8f9fa;
+}
+
+.result-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.result-badge.aprobado { background: #4CAF50; color: white; }
+.result-badge.reprobado { background: #f44336; color: white; }
+
+/* Stats */
+.stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+/* Alert Container */
+.alert-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    max-width: 400px;
+}
+
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    color: white;
+}
+
+.alert-success {
+    background: #4CAF50;
+}
+
+.alert-error {
+    background: #f44336;
+}
+
+.alert-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin-left: auto;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .content-layout {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .content-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .header-badges {
+        justify-content: center;
+    }
+    
+    .evaluation-meta {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Actualizar progress circles
+    document.querySelectorAll('.radial-progress').forEach(function(progress) {
+        const progressValue = progress.getAttribute('data-progress');
+        if (progressValue) {
+            progress.style.background = `conic-gradient(#4CAF50 ${progressValue}%, #e0e0e0 0)`;
+        }
+    });
+
+    // Botón para iniciar capacitación
+    const iniciarBtn = document.getElementById('iniciarCapacitacion');
+    if (iniciarBtn) {
+        iniciarBtn.addEventListener('click', function() {
+            actualizarProgreso('marcar_iniciada');
+        });
+    }
+
+    // Botón para marcar progreso
+    const marcarProgresoBtn = document.getElementById('marcarProgreso');
+    if (marcarProgresoBtn) {
+        marcarProgresoBtn.addEventListener('click', function() {
+            const porcentajeActual = {{ progreso_usuario.porcentaje_completado|default:70 }};
+            let nuevoPorcentaje = porcentajeActual + 25;
+            if (nuevoPorcentaje >= 100) {
+                actualizarProgreso('completar');
+            } else {
+                actualizarProgreso('actualizar_porcentaje', { porcentaje: nuevoPorcentaje });
+            }
+        });
+    }
+
+    // Función para actualizar progreso
+    function actualizarProgreso(accion, datosAdicionales = {}) {
+        const url = "{% url 'deteccion:actualizar_progreso' capacitacion.id %}";
+        const datos = {
+            accion: accion,
+            ...datosAdicionales
+        };
+
+        // Mostrar loading
+        const botones = document.querySelectorAll('#iniciarCapacitacion, #marcarProgreso');
+        botones.forEach(btn => {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            btn.disabled = true;
+            
+            // Restaurar después de 2 segundos si hay error
+            setTimeout(() => {
+                if (btn.disabled) {
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            }, 2000);
+        });
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams(datos)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.mensaje);
+                // Recargar la página después de un breve delay
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showAlert('error', data.error || 'Error al actualizar progreso');
+                // Rehabilitar botones
+                botones.forEach(btn => {
+                    btn.disabled = false;
+                    btn.innerHTML = btn.getAttribute('data-original-text') || btn.innerHTML;
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('error', 'Error de conexión');
+            botones.forEach(btn => {
+                btn.disabled = false;
+                btn.innerHTML = btn.getAttribute('data-original-text') || btn.innerHTML;
+            });
+        });
+    }
+
+    // Función para mostrar alertas
+    function showAlert(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-error';
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+        
+        const alertHtml = `
+            <div class="alert ${alertClass}">
+                <i class="fas ${icon}"></i>
+                ${message}
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        const container = document.getElementById('alertContainer');
+        container.innerHTML = alertHtml;
+        
+        // Auto-remover después de 5 segundos
+        setTimeout(() => {
+            container.innerHTML = '';
+        }, 5000);
+    }
+
+    // Track tiempo de visualización
+    let startTime = new Date();
+    window.addEventListener('beforeunload', function() {
+        const endTime = new Date();
+        const timeSpent = Math.round((endTime - startTime) / 1000 / 60); // minutos
+        
+        if (timeSpent > 0) {
+            const url = "{% url 'deteccion:actualizar_progreso' capacitacion.id %}";
+            const data = new URLSearchParams({
+                'accion': 'acceder',
+                'tiempo_invertido': timeSpent
+            });
+            
+            navigator.sendBeacon(url, data);
+        }
+    });
+});
+</script>
+{% endblock %}

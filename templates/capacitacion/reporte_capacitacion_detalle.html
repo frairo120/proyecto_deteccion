@@ -1,0 +1,611 @@
+<!-- templates/capacitacion/reporte_capacitacion_detalle.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}SD-EPP | Reporte: {{ capacitacion.titulo }}{% endblock %}
+
+{% block content %}
+<div class="reporte-detalle-container">
+    <!-- Header del Reporte -->
+    <div class="reporte-header">
+        <div class="header-content">
+            <h1><i class="fas fa-chart-bar"></i> Reporte Detallado</h1>
+            <h2>{{ capacitacion.titulo }}</h2>
+            <p class="capacitacion-descripcion">{{ capacitacion.descripcion }}</p>
+            
+            <div class="header-stats">
+                <div class="stat-item">
+                    <div class="stat-number">{{ total_trabajadores }}</div>
+                    <div class="stat-label">Total Trabajadores</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ trabajadores_completados }}</div>
+                    <div class="stat-label">Completaron</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ trabajadores_certificados }}</div>
+                    <div class="stat-label">Certificados</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ porcentaje_completado|floatformat:1 }}%</div>
+                    <div class="stat-label">Tasa de Completación</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="header-actions">
+            <a href="{% url 'deteccion:lista_capacitaciones_admin' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            <a href="{% url 'deteccion:exportar_reporte_progreso' %}" class="btn btn-primary">
+                <i class="fas fa-download"></i> Exportar CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de Progreso General -->
+    <div class="progreso-general">
+        <div class="progreso-header">
+            <h3>Progreso General de la Capacitación</h3>
+            <span class="porcentaje">{{ porcentaje_completado|floatformat:1 }}%</span>
+        </div>
+        <div class="progreso-bar-large">
+            <div class="progreso-fill" style="width: {{ porcentaje_completado }}%"></div>
+        </div>
+        <div class="progreso-labels">
+            <span>{{ trabajadores_completados }} de {{ total_trabajadores }} trabajadores han completado</span>
+        </div>
+    </div>
+
+    <!-- Tabla de Progreso por Trabajador -->
+    <div class="tabla-progreso">
+        <div class="tabla-header">
+            <h3><i class="fas fa-users"></i> Progreso por Trabajador</h3>
+            <div class="filtros">
+                <input type="text" id="filtro-trabajador" placeholder="Buscar trabajador..." class="filtro-input">
+                <select id="filtro-estado" class="filtro-select">
+                    <option value="">Todos los estados</option>
+                    <option value="completado">Completados</option>
+                    <option value="en-progreso">En progreso</option>
+                    <option value="no-iniciado">No iniciados</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="progreso-table" id="tabla-progreso">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Trabajador</th>
+                        <th>Email</th>
+                        <th>Estado</th>
+                        <th>Fecha Inicio</th>
+                        <th>Fecha Completación</th>
+                        <th>Certificado</th>
+                        <th>Evaluación</th>
+                        <th>Mejor Puntaje</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dato in datos_trabajadores %}
+                    <tr class="fila-trabajador" 
+                        data-nombre="{{ dato.trabajador.get_full_name|lower }}"
+                        data-estado="{% if dato.certificado %}completado{% elif dato.progreso and dato.progreso.completada %}completado{% elif dato.progreso %}en-progreso{% else %}no-iniciado{% endif %}">
+                        <td>{{ forloop.counter }}</td>
+                        <td class="nombre-trabajador">
+                            <strong>{{ dato.trabajador.get_full_name }}</strong>
+                        </td>
+                        <td>{{ dato.trabajador.email }}</td>
+                        <td>
+                            {% if dato.certificado %}
+                                <span class="badge badge-success">
+                                    <i class="fas fa-certificate"></i> Certificado
+                                </span>
+                            {% elif dato.progreso and dato.progreso.completada %}
+                                <span class="badge badge-completed">
+                                    <i class="fas fa-check-circle"></i> Completado
+                                </span>
+                            {% elif dato.progreso %}
+                                <span class="badge badge-progress">
+                                    <i class="fas fa-spinner"></i> En Progreso
+                                </span>
+                            {% else %}
+                                <span class="badge badge-not-started">
+                                    <i class="fas fa-clock"></i> No Iniciado
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if dato.progreso %}
+                                {{ dato.progreso.fecha_inicio|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if dato.progreso and dato.progreso.fecha_completacion %}
+                                {{ dato.progreso.fecha_completacion|date:"d/m/Y" }}
+                            {% elif dato.progreso and dato.progreso.completada %}
+                                {{ dato.progreso.fecha_completacion|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if dato.certificado %}
+                                <span class="text-success">
+                                    <i class="fas fa-check"></i> Emitido
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ dato.certificado.codigo_certificado }}</small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if dato.ultimo_intento %}
+                                {% if dato.ultimo_intento.aprobado %}
+                                    <span class="text-success">
+                                        <i class="fas fa-check-circle"></i> Aprobado
+                                    </span>
+                                {% else %}
+                                    <span class="text-warning">
+                                        <i class="fas fa-exclamation-circle"></i> No Aprobado
+                                    </span>
+                                {% endif %}
+                                <br>
+                                <small>Intento {{ dato.ultimo_intento.numero_intento }}</small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if dato.mejor_puntaje > 0 %}
+                                <span class="puntaje {% if dato.mejor_puntaje >= 70 %}puntaje-alto{% else %}puntaje-bajo{% endif %}">
+                                    {{ dato.mejor_puntaje }} pts
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="acciones-trabajador">
+                                <a href="{% url 'deteccion:detalle_progreso_trabajador' dato.trabajador.id %}" 
+                                   class="btn-action btn-view" title="Ver detalle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if not dato.progreso %}
+                                    <span class="btn-action btn-disabled" title="No ha iniciado">
+                                        <i class="fas fa-ban"></i>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center no-data">
+                            <i class="fas fa-inbox fa-3x"></i>
+                            <p>No hay trabajadores asignados a esta capacitación</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Resumen de Evaluaciones -->
+    {% if trabajadores_certificados > 0 %}
+    <div class="resumen-evaluaciones">
+        <h3><i class="fas fa-chart-pie"></i> Resumen de Evaluaciones</h3>
+        <div class="resumen-grid">
+            <div class="resumen-card">
+                <div class="resumen-icon">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div class="resumen-content">
+                    <h4>{{ trabajadores_certificados }}</h4>
+                    <p>Trabajadores Certificados</p>
+                </div>
+            </div>
+            <div class="resumen-card">
+                <div class="resumen-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="resumen-content">
+                    <h4>
+                        {% with total_puntajes=0 count=0 %}
+                            {% for dato in datos_trabajadores %}
+                                {% if dato.mejor_puntaje > 0 %}
+                                    <!-- Estos cálculos se harían mejor en la vista -->
+                                {% endif %}
+                            {% endfor %}
+                            {{ total_puntajes|default:0 }}
+                        {% endwith %}
+                    </h4>
+                    <p>Puntaje Promedio</p>
+                </div>
+            </div>
+            <div class="resumen-card">
+                <div class="resumen-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="resumen-content">
+                    <h4>
+                        {% with max_puntaje=0 %}
+                            {% for dato in datos_trabajadores %}
+                                {% if dato.mejor_puntaje > max_puntaje %}
+                                    <!-- Este cálculo se haría mejor en la vista -->
+                                {% endif %}
+                            {% endfor %}
+                            {{ max_puntaje|default:0 }}
+                        {% endwith %}
+                    </h4>
+                    <p>Mejor Puntaje</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.reporte-detalle-container {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.reporte-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.header-content h1 {
+    margin: 0 0 10px 0;
+    font-size: 2em;
+}
+
+.header-content h2 {
+    margin: 0 0 15px 0;
+    font-size: 1.5em;
+    opacity: 0.9;
+}
+
+.capacitacion-descripcion {
+    margin: 0 0 20px 0;
+    opacity: 0.8;
+    font-size: 1.1em;
+}
+
+.header-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.stat-item {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 15px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.stat-number {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    color: white;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #3498db;
+}
+
+.btn-secondary {
+    background: #6c757d;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.progreso-general {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.progreso-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.progreso-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.porcentaje {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #27ae60;
+}
+
+.progreso-bar-large {
+    width: 100%;
+    height: 20px;
+    background: #ecf0f1;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progreso-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #27ae60, #2ecc71);
+    transition: width 0.5s ease;
+}
+
+.progreso-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+.tabla-progreso {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.tabla-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.tabla-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.filtros {
+    display: flex;
+    gap: 10px;
+}
+
+.filtro-input, .filtro-select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9em;
+}
+
+.filtro-input {
+    width: 200px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.progreso-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.progreso-table th {
+    background: #f8f9fa;
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #2c3e50;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.progreso-table td {
+    padding: 12px;
+    border-bottom: 1px solid #dee2e6;
+    vertical-align: middle;
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+.badge-success { background: #d4edda; color: #155724; }
+.badge-completed { background: #d1ecf1; color: #0c5460; }
+.badge-progress { background: #fff3cd; color: #856404; }
+.badge-not-started { background: #f8d7da; color: #721c24; }
+
+.puntaje {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.puntaje-alto { background: #d4edda; color: #155724; }
+.puntaje-bajo { background: #f8d7da; color: #721c24; }
+
+.acciones-trabajador {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-action {
+    padding: 6px 10px;
+    border-radius: 4px;
+    text-decoration: none;
+    color: white;
+    font-size: 0.8em;
+}
+
+.btn-view { background: #3498db; }
+.btn-disabled { background: #bdc3c7; cursor: not-allowed; }
+
+.btn-action:hover:not(.btn-disabled) {
+    opacity: 0.8;
+}
+
+.resumen-evaluaciones {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.resumen-evaluaciones h3 {
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+}
+
+.resumen-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.resumen-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.resumen-icon {
+    font-size: 2em;
+    color: #3498db;
+}
+
+.resumen-content h4 {
+    margin: 0;
+    font-size: 1.8em;
+    color: #2c3e50;
+}
+
+.resumen-content p {
+    margin: 5px 0 0 0;
+    color: #7f8c8d;
+}
+
+.no-data {
+    padding: 40px;
+    text-align: center;
+    color: #bdc3c7;
+}
+
+.no-data i {
+    margin-bottom: 15px;
+}
+
+.text-center { text-align: center; }
+.text-success { color: #28a745; }
+.text-warning { color: #ffc107; }
+.text-muted { color: #6c757d; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .reporte-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .header-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .tabla-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+    
+    .filtros {
+        flex-direction: column;
+    }
+    
+    .filtro-input {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filtroTrabajador = document.getElementById('filtro-trabajador');
+    const filtroEstado = document.getElementById('filtro-estado');
+    const filasTrabajador = document.querySelectorAll('.fila-trabajador');
+    
+    function filtrarTabla() {
+        const texto = filtroTrabajador.value.toLowerCase();
+        const estado = filtroEstado.value;
+        
+        filasTrabajador.forEach(fila => {
+            const nombre = fila.dataset.nombre;
+            const filaEstado = fila.dataset.estado;
+            
+            const coincideNombre = nombre.includes(texto);
+            const coincideEstado = estado === '' || filaEstado === estado;
+            
+            if (coincideNombre && coincideEstado) {
+                fila.style.display = '';
+            } else {
+                fila.style.display = 'none';
+            }
+        });
+    }
+    
+    filtroTrabajador.addEventListener('input', filtrarTabla);
+    filtroEstado.addEventListener('change', filtrarTabla);
+});
+</script>
+{% endblock %}

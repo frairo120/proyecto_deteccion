@@ -4,91 +4,437 @@
 {% block title %}SD-EPP | Lista de Empleados{% endblock %}
 
 {% block extra_head %}
-    <link rel="stylesheet" href="{% static 'css/lista_empleados.css' %}">
+<style>
+    /* Estilos específicos para la página de empleados */
+    .page-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+    }
+    
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .header-actions {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        text-align: center;
+        border-left: 4px solid var(--primary-color);
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .stat-number {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        line-height: 1;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .stat-active { border-left-color: var(--success-color); }
+    .stat-active .stat-number { color: var(--success-color); }
+    .stat-inactive { border-left-color: var(--warning-color); }
+    .stat-inactive .stat-number { color: var(--warning-color); }
+    .stat-total { border-left-color: var(--primary-color); }
+    .stat-total .stat-number { color: var(--primary-color); }
+
+    /* Tabla de empleados */
+    .table-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+    
+    .table-card-header {
+        background-color: white;
+        border-bottom: 1px solid #eee;
+        padding: 20px 25px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .table-card-header h2 {
+        margin: 0;
+        font-size: 1.3rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .table-card-body {
+        padding: 0;
+    }
+
+    /* Badges y estados */
+    .badge-cargo {
+        background-color: #e3f2fd;
+        color: #1976d2;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .status-active {
+        background-color: rgba(76, 175, 80, 0.1);
+        color: var(--success-color);
+        border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+    
+    .status-inactive {
+        background-color: rgba(255, 152, 0, 0.1);
+        color: var(--warning-color);
+        border: 1px solid rgba(255, 152, 0, 0.3);
+    }
+
+    /* Acciones */
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+    }
+    
+    .action-btn {
+        width: 35px;
+        height: 35px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .edit-btn {
+        background-color: rgba(33, 150, 243, 0.1);
+        color: var(--info-color);
+    }
+    
+    .edit-btn:hover {
+        background-color: var(--info-color);
+        color: white;
+        transform: translateY(-1px);
+    }
+    
+    .delete-btn {
+        background-color: rgba(244, 67, 54, 0.1);
+        color: var(--danger-color);
+    }
+    
+    .delete-btn:hover {
+        background-color: var(--danger-color);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    /* Información del empleado */
+    .employee-info {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .employee-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 4px;
+    }
+    
+    .employee-details {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .employee-cedula {
+        font-size: 0.85rem;
+        color: #666;
+        font-weight: 500;
+    }
+    
+    .employee-email {
+        font-size: 0.8rem;
+        color: #999;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* Estado vacío */
+    .empty-state {
+        text-align: center;
+        padding: 60px 40px;
+        color: #666;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+    
+    .empty-state h3 {
+        margin: 0 0 10px 0;
+        color: #333;
+    }
+    
+    .empty-state p {
+        margin: 0;
+        font-size: 1rem;
+    }
+
+    /* Filtros y búsqueda */
+    .filters-container {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .search-box {
+        position: relative;
+    }
+    
+    .search-box .form-control {
+        padding-left: 45px;
+        border-radius: 10px;
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #666;
+        z-index: 5;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .stats-container {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .stat-card {
+            padding: 20px 15px;
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+        }
+        
+        .table-card-header {
+            flex-direction: column;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        
+        .header-actions {
+            width: 100%;
+            justify-content: space-between;
+        }
+        
+        .action-buttons {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .page-header {
+            padding: 20px;
+        }
+        
+        .page-title {
+            font-size: 1.5rem;
+        }
+    }
+
+    /* Animaciones */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-
-<div class="content-wrapper">
+<div class="content-area">
+    <!-- Header de la página -->
     <div class="page-header">
-        
-        <h1 class="page-title">
-            <i class="fas fa-users"></i> Gestión de Empleados
-        </h1>
-        <a href="{% url 'deteccion:crear_empleado' %}" class="btn-primary">
-            <i class="fas fa-user-plus"></i>
-            <span>Nuevo Empleado</span>
-        </a>
-        {% if user.is_authenticated and menu_list %}
-            <div class="sidebar-section">
-                <p class="section-title">Accesos Personalizados</p>
-                {% for menu_item in menu_list %}
-                    <div class="menu-block">
-                        <div class="menu-title-small">{{ menu_item.menu.name }}</div>
-                        {% for module_permission in menu_item.group_module_permission_list %}
-                            {% with module=module_permission.module %}
-                                {% if module.url %}
-                                    <a href="{{ module.url }}" class="nav-button submodule">
-                                        {% if module.icon %}
-                                            <i class="{{ module.icon }}"></i>
-                                        {% else %}
-                                            <i class="fas fa-th-large"></i>
-                                        {% endif %}
-                                        <span>{{ module.name }}</span>
-                                    </a>
-                                {% endif %}
-                            {% endwith %}
-                        {% endfor %}
-                    </div>
-                {% endfor %}
+        <div class="d-flex justify-content-between align-items-start w-100">
+            <div>
+                <h1 class="page-title">
+                    <i class="fas fa-users"></i> Gesti&oacute;n de Empleados
+                </h1>
+                <p class="mb-0 opacity-75">Administra y gestiona la informaci&oacute;n de los trabajadores</p>
             </div>
-            {% endif %}
-    </div>
-    
-
-    <div class="card">
-        <div class="card-header">
-            <h2>Lista de Trabajadores</h2>
-            <p class="text-muted">Total: <strong>{{ empleados|length }}</strong> empleados registrados</p>
+            <div class="header-actions">
+                <a href="{% url 'deteccion:crear_empleado' %}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-2"></i>Nuevo Empleado
+                </a>
+            </div>
         </div>
+    </div>
 
-        <div class="card-body">
+    <!-- Estadísticas -->
+    <div class="stats-container" id="stats-container">
+        <div class="stat-card stat-total">
+            <div class="stat-number">{{ empleados|length }}</div>
+            <div class="stat-label">Total Empleados</div>
+        </div>
+        <div class="stat-card stat-active">
+            <div class="stat-number" id="active-count">{{ empleados|length }}</div>
+            <div class="stat-label">Activos</div>
+        </div>
+        <div class="stat-card stat-inactive">
+            <div class="stat-number" id="inactive-count">0</div>
+            <div class="stat-label">Inactivos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ empleados|length }}</div>
+            <div class="stat-label">Registrados</div>
+        </div>
+    </div>
+
+    <!-- Filtros y Búsqueda -->
+    <div class="filters-container">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="form-control" placeholder="Buscar empleados..." id="searchInput">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="statusFilter">
+                    <option value="">Todos los estados</option>
+                    <option value="active">Activos</option>
+                    <option value="inactive">Inactivos</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="cargoFilter">
+                    <option value="">Todos los cargos</option>
+                    {% for cargo in cargos %}
+                        <option value="{{ cargo.nombre }}">{{ cargo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de empleados -->
+    <div class="table-card">
+        <div class="table-card-header">
+            <h2><i class="fas fa-list me-2"></i>Lista de Trabajadores</h2>
+            <div class="text-muted">
+                Mostrando <strong id="showing-count">{{ empleados|length }}</strong> de <strong>{{ empleados|length }}</strong> empleados
+            </div>
+        </div>
+        <div class="table-card-body">
             {% if empleados %}
-            <div class="table-container">
-                <table class="employee-table">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th style="width: 60px;">#</th>
                             <th>Nombre Completo</th>
-                            <th>Cédula / Email</th>
+                            <th>Información de Contacto</th>
                             <th>Cargo</th>
-                            <th class="text-center">Ingreso</th>
-                            <th class="text-center">Estado</th>
-                            <th class="text-center">Acciones</th>
+                            <th style="width: 120px;">Fecha Ingreso</th>
+                            <th style="width: 100px;">Estado</th>
+                            <th style="width: 100px;" class="text-center">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="employees-tbody">
                         {% for empleado in empleados %}
-                        <tr class="employee-row">
-                            <td class="text-center">{{ forloop.counter }}</td>
+                        <tr class="fade-in employee-row" data-status="{% if empleado.activo %}active{% else %}inactive{% endif %}" data-cargo="{{ empleado.cargo.nombre }}">
+                            <td class="text-center">
+                                <strong>{{ forloop.counter }}</strong>
+                            </td>
                             <td>
-                                <div class="employee-name">
-                                    <strong>{{ empleado.nombre_completo }}</strong>
+                                <div class="employee-info">
+                                    <div class="employee-name">{{ empleado.nombre_completo }}</div>
                                 </div>
                             </td>
                             <td>
-                                <div class="employee-id">
-                                    <span class="cedula">{{ empleado.cedula_ecuatoriana }}</span>
+                                <div class="employee-details">
+                                    <span class="employee-cedula">
+                                        <i class="fas fa-id-card me-1"></i>{{ empleado.cedula_ecuatoriana }}
+                                    </span>
                                     {% if empleado.user %}
-                                    <small class="email"><i class="fas fa-envelope"></i> {{ empleado.user.email }}</small>
+                                    <span class="employee-email">
+                                        <i class="fas fa-envelope me-1"></i>{{ empleado.user.email }}
+                                    </span>
                                     {% endif %}
                                 </div>
                             </td>
                             <td>
-                                <span class="badge badge-cargo">{{ empleado.cargo.nombre }}</span>
+                                <span class="badge-cargo">{{ empleado.cargo.nombre }}</span>
                             </td>
-                            <td class="text-center">{{ empleado.fecha_ingreso|date:"d M, Y" }}</td>
-                            <td class="text-center">
+                            <td>
+                                <small class="text-muted">{{ empleado.fecha_ingreso|date:"d M, Y" }}</small>
+                            </td>
+                            <td>
                                 {% if empleado.activo %}
                                     <span class="status-badge status-active">
                                         <i class="fas fa-check-circle"></i> Activo
@@ -99,13 +445,15 @@
                                     </span>
                                 {% endif %}
                             </td>
-                            <td class="text-center actions">
-                                <a href="{% url 'deteccion:empleado_editar' empleado.pk %}" class="action-btn edit-btn" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{% url 'deteccion:empleado_eliminar' empleado.pk %}" class="action-btn delete-btn" title="Eliminar">
-                                    <i class="fas fa-trash-alt"></i>
-                                </a>
+                            <td class="text-center">
+                                <div class="action-buttons">
+                                    <a href="{% url 'deteccion:empleado_editar' empleado.pk %}" class="action-btn edit-btn" title="Editar empleado">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'deteccion:empleado_eliminar' empleado.pk %}" class="action-btn delete-btn" title="Eliminar empleado" onclick="return confirm('¿Estás seguro de que deseas eliminar este empleado?');">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -117,14 +465,97 @@
                 <i class="fas fa-users-slash"></i>
                 <h3>No hay empleados registrados</h3>
                 <p>Comienza agregando el primer trabajador al sistema.</p>
-                <a href="{% url 'deteccion:empleado_create' %}" class="btn-primary mt-3">
-                    <i class="fas fa-plus"></i> Crear Primer Empleado
+                <a href="{% url 'deteccion:crear_empleado' %}" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus me-2"></i>Crear Primer Empleado
                 </a>
             </div>
             {% endif %}
-            
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script>
+    // Filtrado y búsqueda de empleados
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const cargoFilter = document.getElementById('cargoFilter');
+        const employeeRows = document.querySelectorAll('.employee-row');
+        const showingCount = document.getElementById('showing-count');
+        const activeCount = document.getElementById('active-count');
+        const inactiveCount = document.getElementById('inactive-count');
+
+        // Calcular estadísticas iniciales
+        function calculateStats() {
+            let active = 0;
+            let inactive = 0;
+            
+            employeeRows.forEach(row => {
+                if (row.getAttribute('data-status') === 'active') {
+                    active++;
+                } else {
+                    inactive++;
+                }
+            });
+            
+            activeCount.textContent = active;
+            inactiveCount.textContent = inactive;
+        }
+
+        // Función de filtrado
+        function filterEmployees() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const statusValue = statusFilter.value;
+            const cargoValue = cargoFilter.value;
+            
+            let visibleCount = 0;
+
+            employeeRows.forEach(row => {
+                const name = row.querySelector('.employee-name').textContent.toLowerCase();
+                const cedula = row.querySelector('.employee-cedula').textContent.toLowerCase();
+                const status = row.getAttribute('data-status');
+                const cargo = row.getAttribute('data-cargo');
+                
+                const matchesSearch = name.includes(searchTerm) || cedula.includes(searchTerm);
+                const matchesStatus = !statusValue || status === statusValue;
+                const matchesCargo = !cargoValue || cargo === cargoValue;
+                
+                if (matchesSearch && matchesStatus && matchesCargo) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            showingCount.textContent = visibleCount;
+        }
+
+        // Event listeners para filtros
+        searchInput.addEventListener('input', filterEmployees);
+        statusFilter.addEventListener('change', filterEmployees);
+        cargoFilter.addEventListener('change', filterEmployees);
+
+        // Calcular estadísticas iniciales
+        calculateStats();
+
+        // Efectos de hover en las filas
+        employeeRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+    });
+
+    // Confirmación para eliminación
+    function confirmDelete(empleadoName) {
+        return confirm(`¿Estás seguro de que deseas eliminar a ${empleadoName}? Esta acción no se puede deshacer.`);
+    }
+</script>
 {% endblock %}

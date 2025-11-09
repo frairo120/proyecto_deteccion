@@ -1,0 +1,741 @@
+<!-- templates/capacitacion/form_capacitacion.html -->
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}SD-EPP | {{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="form-capacitacion-container">
+    <div class="form-header">
+        <h1><i class="fas fa-{{ titulo|lower|cut:' '|cut:':'|cut:'capacitación'|default:'book' }}"></i> {{ titulo }}</h1>
+        <nav class="breadcrumb">
+            <a href="{% url 'deteccion:lista_capacitaciones_admin' %}">Capacitaciones</a>
+            <span class="separator">/</span>
+            <span class="current">{{ titulo }}</span>
+        </nav>
+    </div>
+
+    <div class="form-content">
+        <form method="post" enctype="multipart/form-data" class="capacitacion-form" id="capacitacionForm">
+            {% csrf_token %}
+            
+            <!-- Mensajes de error generales -->
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="form-grid">
+                <!-- Información Básica -->
+                <div class="form-section">
+                    <h3><i class="fas fa-info-circle"></i> Información Básica</h3>
+                    
+                    <div class="form-group">
+                        <label for="{{ form.titulo.id_for_label }}" class="form-label">
+                            {{ form.titulo.label }} *
+                        </label>
+                        {{ form.titulo }}
+                        {% if form.titulo.errors %}
+                        <div class="error-list">
+                            {% for error in form.titulo.errors %}
+                                <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.descripcion.id_for_label }}" class="form-label">
+                            {{ form.descripcion.label }} *
+                        </label>
+                        {{ form.descripcion }}
+                        {% if form.descripcion.errors %}
+                        <div class="error-list">
+                            {% for error in form.descripcion.errors %}
+                                <span class="error">{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.duracion_minutos.id_for_label }}" class="form-label">
+                                {{ form.duracion_minutos.label }} *
+                            </label>
+                            {{ form.duracion_minutos }}
+                            <div class="form-help">Duración estimada en minutos</div>
+                            {% if form.duracion_minutos.errors %}
+                            <div class="error-list">
+                                {% for error in form.duracion_minutos.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.estado.id_for_label }}" class="form-label">
+                                {{ form.estado.label }} *
+                            </label>
+                            {{ form.estado }}
+                            {% if form.estado.errors %}
+                            <div class="error-list">
+                                {% for error in form.estado.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuración de Evaluación -->
+                <div class="form-section">
+                    <h3><i class="fas fa-graduation-cap"></i> Configuración de Evaluación</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="{{ form.puntaje_minimo.id_for_label }}" class="form-label">
+                                {{ form.puntaje_minimo.label }} *
+                            </label>
+                            {{ form.puntaje_minimo }}
+                            <div class="form-help">Puntaje mínimo para aprobar (0-100)</div>
+                            {% if form.puntaje_minimo.errors %}
+                            <div class="error-list">
+                                {% for error in form.puntaje_minimo.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.intentos_permitidos.id_for_label }}" class="form-label">
+                                {{ form.intentos_permitidos.label }} *
+                            </label>
+                            {{ form.intentos_permitidos }}
+                            <div class="form-help">Número máximo de intentos permitidos</div>
+                            {% if form.intentos_permitidos.errors %}
+                            <div class="error-list">
+                                {% for error in form.intentos_permitidos.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tipo de Contenido -->
+            <div class="form-section">
+                <h3><i class="fas fa-file-alt"></i> Tipo de Contenido</h3>
+                
+                <div class="form-group">
+                    <label for="{{ form.tipo_contenido.id_for_label }}" class="form-label">
+                        {{ form.tipo_contenido.label }} *
+                    </label>
+                    {{ form.tipo_contenido }}
+                    {% if form.tipo_contenido.errors %}
+                    <div class="error-list">
+                        {% for error in form.tipo_contenido.errors %}
+                            <span class="error">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Campos dinámicos según el tipo de contenido -->
+                <div id="campos-contenido">
+                    <!-- Texto -->
+                    <div class="campo-tipo campo-texto" style="display: none;">
+                        <div class="form-group">
+                            <label for="{{ form.contenido_texto.id_for_label }}" class="form-label">
+                                Contenido Textual *
+                            </label>
+                            {{ form.contenido_texto }}
+                            <div class="form-help">Ingrese el contenido completo de la capacitación en formato texto</div>
+                            {% if form.contenido_texto.errors %}
+                            <div class="error-list">
+                                {% for error in form.contenido_texto.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- PDF -->
+                    <div class="campo-tipo campo-pdf" style="display: none;">
+                        <div class="form-group">
+                            <label for="{{ form.archivo_pdf.id_for_label }}" class="form-label">
+                                Archivo PDF *
+                            </label>
+                            {{ form.archivo_pdf }}
+                            <div class="form-help">Suba un archivo PDF con el contenido de la capacitación</div>
+                            {% if form.archivo_pdf.errors %}
+                            <div class="error-list">
+                                {% for error in form.archivo_pdf.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if capacitacion and capacitacion.archivo_pdf %}
+                            <div class="archivo-actual">
+                                <i class="fas fa-file-pdf"></i>
+                                <span>Archivo actual: {{ capacitacion.archivo_pdf.name }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Imagen -->
+                    <div class="campo-tipo campo-imagen" style="display: none;">
+                        <div class="form-group">
+                            <label for="{{ form.archivo_imagen.id_for_label }}" class="form-label">
+                                Imagen *
+                            </label>
+                            {{ form.archivo_imagen }}
+                            <div class="form-help">Suba una imagen con el contenido de la capacitación</div>
+                            {% if form.archivo_imagen.errors %}
+                            <div class="error-list">
+                                {% for error in form.archivo_imagen.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if capacitacion and capacitacion.archivo_imagen %}
+                            <div class="archivo-actual">
+                                <i class="fas fa-image"></i>
+                                <span>Imagen actual: {{ capacitacion.archivo_imagen.name }}</span>
+                                <img src="{{ capacitacion.archivo_imagen.url }}" alt="Vista previa" class="preview-imagen">
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Video -->
+                    <div class="campo-tipo campo-video" style="display: none;">
+                        <div class="form-group">
+                            <label for="{{ form.url_video.id_for_label }}" class="form-label">
+                                URL de Video *
+                            </label>
+                            {{ form.url_video }}
+                            <div class="form-help">Ingrese la URL de un video (YouTube, Vimeo, etc.)</div>
+                            {% if form.url_video.errors %}
+                            <div class="error-list">
+                                {% for error in form.url_video.errors %}
+                                    <span class="error">{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            
+                            {% if capacitacion and capacitacion.url_video %}
+                            <div class="archivo-actual">
+                                <i class="fas fa-video"></i>
+                                <span>Video actual: {{ capacitacion.url_video }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-large">
+                    <i class="fas fa-save"></i>
+                    {% if capacitacion %}Actualizar Capacitación{% else %}Crear Capacitación{% endif %}
+                </button>
+                
+                <a href="{% url 'deteccion:lista_capacitaciones_admin' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+                
+                {% if capacitacion %}
+                <a href="{% url 'deteccion:gestionar_evaluacion' capacitacion.id %}" class="btn btn-info">
+                    <i class="fas fa-tasks"></i> Gestionar Evaluación
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-capacitacion-container {
+    padding: 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.form-header {
+    margin-bottom: 30px;
+}
+
+.form-header h1 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #7f8c8d;
+    font-size: 0.9em;
+}
+
+.breadcrumb a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb .separator {
+    color: #bdc3c7;
+}
+
+.breadcrumb .current {
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.form-content {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.form-grid {
+    display: grid;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.form-section {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 25px;
+    background: #f8f9fa;
+}
+
+.form-section h3 {
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.2em;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-label::after {
+    content: " *";
+    color: #e74c3c;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Estilos para los campos del formulario */
+input[type="text"],
+input[type="number"],
+input[type="url"],
+textarea,
+select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+textarea {
+    min-height: 120px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+/* Archivos */
+input[type="file"] {
+    padding: 8px;
+    border: 2px dashed #ddd;
+    border-radius: 5px;
+    background: #fafafa;
+    width: 100%;
+}
+
+input[type="file"]:hover {
+    border-color: #3498db;
+    background: #f8f9fa;
+}
+
+.archivo-actual {
+    margin-top: 10px;
+    padding: 10px;
+    background: #e8f4fd;
+    border-radius: 5px;
+    border-left: 4px solid #3498db;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.archivo-actual i {
+    color: #3498db;
+}
+
+.preview-imagen {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 5px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+}
+
+/* Botones */
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: #3498db;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #138496;
+    transform: translateY(-2px);
+}
+
+.btn-large {
+    padding: 14px 28px;
+    font-size: 16px;
+}
+
+/* Alertas y errores */
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.alert-danger {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.error-list {
+    margin-top: 5px;
+}
+
+.error {
+    color: #e74c3c;
+    font-size: 0.9em;
+    display: block;
+}
+
+.form-help {
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Campos dinámicos */
+.campo-tipo {
+    margin-top: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+/* Estados del formulario */
+input:invalid, textarea:invalid, select:invalid {
+    border-color: #e74c3c;
+}
+
+input:valid, textarea:valid, select:valid {
+    border-color: #27ae60;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-capacitacion-container {
+        padding: 10px;
+    }
+    
+    .form-content {
+        padding: 20px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-section {
+        padding: 15px;
+    }
+    
+    .form-grid {
+        gap: 20px;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoContenidoSelect = document.getElementById('{{ form.tipo_contenido.id_for_label }}');
+    const camposContenido = document.getElementById('campos-contenido');
+    const form = document.getElementById('capacitacionForm');
+    
+    // Mostrar/ocultar campos según el tipo de contenido
+    function actualizarCamposContenido() {
+        const tipoSeleccionado = tipoContenidoSelect.value;
+        
+        // Ocultar todos los campos primero
+        document.querySelectorAll('.campo-tipo').forEach(campo => {
+            campo.style.display = 'none';
+        });
+        
+        // Mostrar el campo correspondiente
+        if (tipoSeleccionado) {
+            const campoAMostrar = document.querySelector(`.campo-${tipoSeleccionado}`);
+            if (campoAMostrar) {
+                campoAMostrar.style.display = 'block';
+            }
+        }
+    }
+    
+    // Validación del formulario
+    function validarFormulario(event) {
+        const tipoContenido = tipoContenidoSelect.value;
+        let esValido = true;
+        
+        // Validar campos requeridos según el tipo de contenido
+        if (tipoContenido === 'texto') {
+            const contenidoTexto = document.getElementById('{{ form.contenido_texto.id_for_label }}');
+            if (!contenidoTexto.value.trim()) {
+                mostrarError(contenidoTexto, 'El contenido textual es requerido');
+                esValido = false;
+            }
+        } else if (tipoContenido === 'pdf') {
+            const archivoPdf = document.getElementById('{{ form.archivo_pdf.id_for_label }}');
+            {% if not capacitacion or not capacitacion.archivo_pdf %}
+            if (!archivoPdf.files.length) {
+                mostrarError(archivoPdf, 'Debe subir un archivo PDF');
+                esValido = false;
+            }
+            {% endif %}
+        } else if (tipoContenido === 'imagen') {
+            const archivoImagen = document.getElementById('{{ form.archivo_imagen.id_for_label }}');
+            {% if not capacitacion or not capacitacion.archivo_imagen %}
+            if (!archivoImagen.files.length) {
+                mostrarError(archivoImagen, 'Debe subir una imagen');
+                esValido = false;
+            }
+            {% endif %}
+        } else if (tipoContenido === 'video') {
+            const urlVideo = document.getElementById('{{ form.url_video.id_for_label }}');
+            if (!urlVideo.value.trim()) {
+                mostrarError(urlVideo, 'La URL del video es requerida');
+                esValido = false;
+            } else if (!esUrlValida(urlVideo.value)) {
+                mostrarError(urlVideo, 'Ingrese una URL válida');
+                esValido = false;
+            }
+        }
+        
+        if (!esValido) {
+            event.preventDefault();
+            // Scroll al primer error
+            const primerError = document.querySelector('.error');
+            if (primerError) {
+                primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
+    
+    function mostrarError(campo, mensaje) {
+        // Remover error anterior si existe
+        const errorAnterior = campo.parentNode.querySelector('.error-campo');
+        if (errorAnterior) {
+            errorAnterior.remove();
+        }
+        
+        // Agregar nuevo error
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error error-campo';
+        errorDiv.textContent = mensaje;
+        campo.parentNode.appendChild(errorDiv);
+        
+        // Resaltar campo
+        campo.style.borderColor = '#e74c3c';
+    }
+    
+    function esUrlValida(url) {
+        try {
+            new URL(url);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+    
+    // Preview de imagen
+    const inputImagen = document.getElementById('{{ form.archivo_imagen.id_for_label }}');
+    if (inputImagen) {
+        inputImagen.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Crear o actualizar preview
+                    let preview = document.querySelector('.preview-imagen-nuevo');
+                    if (!preview) {
+                        preview = document.createElement('img');
+                        preview.className = 'preview-imagen-nuevo';
+                        preview.style.maxWidth = '200px';
+                        preview.style.maxHeight = '150px';
+                        preview.style.borderRadius = '5px';
+                        preview.style.marginTop = '10px';
+                        preview.style.border = '1px solid #ddd';
+                        inputImagen.parentNode.appendChild(preview);
+                    }
+                    preview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Event listeners
+    tipoContenidoSelect.addEventListener('change', actualizarCamposContenido);
+    form.addEventListener('submit', validarFormulario);
+    
+    // Inicializar campos al cargar la página
+    actualizarCamposContenido();
+    
+    // Mostrar ayuda contextual
+    const ayudaTipoContenido = {
+        'texto': 'Ideal para contenido escrito, manuales o documentos extensos.',
+        'pdf': 'Perfecto para presentaciones, manuales o documentos formales.',
+        'imagen': 'Adecuado para infografías, diagramas o material visual.',
+        'video': 'Excelente para tutoriales, demostraciones o contenido multimedia.'
+    };
+    
+    tipoContenidoSelect.addEventListener('change', function() {
+        const ayuda = document.getElementById('ayuda-tipo-contenido');
+        if (!ayuda) {
+            const nuevaAyuda = document.createElement('div');
+            nuevaAyuda.id = 'ayuda-tipo-contenido';
+            nuevaAyuda.className = 'form-help';
+            nuevaAyuda.style.marginTop = '10px';
+            nuevaAyuda.style.fontStyle = 'italic';
+            nuevaAyuda.style.color = '#17a2b8';
+            tipoContenidoSelect.parentNode.appendChild(nuevaAyuda);
+        }
+        
+        const ayudaElement = document.getElementById('ayuda-tipo-contenido');
+        ayudaElement.textContent = ayudaTipoContenido[this.value] || '';
+    });
+    
+    // Disparar evento change para mostrar ayuda inicial
+    tipoContenidoSelect.dispatchEvent(new Event('change'));
+});
+</script>
+{% endblock %}

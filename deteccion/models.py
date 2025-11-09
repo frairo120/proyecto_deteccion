@@ -5,6 +5,7 @@ from django.db.models import UniqueConstraint
 from django.core.validators import RegexValidator
 from django.db import models
 from .util import valida_cedula
+from django.utils import timezone
 
 
 class Menu(models.Model):
@@ -148,13 +149,37 @@ class Alert(models.Model):
         ('low', 'Baja'),
         ('positive', 'Positiva'),
     )
+    
+    RESOLUTION_CHOICES = (
+        ('pending', 'Pendiente'),
+        ('resolved', 'Resuelto'),
+        ('false_positive', 'Falsa Alerta'),
+        ('non_compliant', 'Incumplimiento Real'),
+        ('system_error', 'Error del Sistema'),
+    )
 
     message = models.CharField(max_length=255)
     missing = models.CharField(max_length=255, blank=True)
     level = models.CharField(max_length=10, choices=LEVEL_CHOICES, default='high')
-    video = models.FileField(upload_to='', blank=True, null=True)  # Guardará directamente en MEDIA_ROOT
+    video = models.FileField(upload_to='', blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     resolved = models.BooleanField(default=False)
+    
+    # ✅ NUEVOS CAMPOS PARA RESOLUCIÓN
+    resolution_status = models.CharField(
+        max_length=20, 
+        choices=RESOLUTION_CHOICES, 
+        default='pending'
+    )
+    resolution_notes = models.TextField(blank=True, null=True)
+    resolved_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='resolved_alerts'
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Alerta'
@@ -163,6 +188,15 @@ class Alert(models.Model):
 
     def __str__(self):
         return f"{self.get_level_display()} - {self.message} ({self.timestamp:%Y-%m-%d %H:%M:%S})"
+
+    def mark_as_resolved(self, user, status='resolved', notes=''):
+        """Marca la alerta como resuelta"""
+        self.resolved = True
+        self.resolution_status = status
+        self.resolution_notes = notes
+        self.resolved_by = user
+        self.resolved_at = timezone.now()
+        self.save()
 
 
 class Cargo(models.Model):
@@ -245,4 +279,174 @@ class Empleado(models.Model):
         verbose_name_plural = "Empleados"
 
 
+####capacitaciones
+import uuid
+from django.db import models
+from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
+
+
+class Capacitacion(models.Model):
+    TIPO_CONTENIDO = [
+        ('texto', 'Texto'),
+        ('pdf', 'PDF'),
+        ('video', 'Video'),
+        ('imagen', 'Imagen'),
+    ]
+
+    ESTADO_CAPACITACION = [
+        ('borrador', 'Borrador'),
+        ('publicada', 'Publicada'),
+        ('archivada', 'Archivada'),
+    ]
+
+    titulo = models.CharField(max_length=200, verbose_name="Título")
+    descripcion = models.TextField(verbose_name="Descripción")
+    tipo_contenido = models.CharField(max_length=10, choices=TIPO_CONTENIDO, verbose_name="Tipo de Contenido")
+    contenido_texto = models.TextField(blank=True, null=True, verbose_name="Contenido Textual")
+    archivo_pdf = models.FileField(upload_to='capacitaciones/pdf/', blank=True, null=True, verbose_name="Archivo PDF")
+    archivo_imagen = models.ImageField(upload_to='capacitaciones/imagenes/', blank=True, null=True, verbose_name="Imagen")
+    url_video = models.URLField(blank=True, null=True, verbose_name="URL de Video")
+    duracion_minutos = models.IntegerField(default=30, verbose_name="Duración (minutos)", validators=[MinValueValidator(1)])
+    estado = models.CharField(max_length=10, choices=ESTADO_CAPACITACION, default='borrador', verbose_name="Estado")
+    creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='capacitaciones_creadas', verbose_name="Creado por")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+    fecha_actualizacion = models.DateTimeField(auto_now=True, verbose_name="Fecha de Actualización")
+    puntaje_minimo = models.IntegerField(default=70, verbose_name="Puntaje Mínimo para Aprobar", validators=[MinValueValidator(0), MaxValueValidator(100)])
+    intentos_permitidos = models.IntegerField(default=3, verbose_name="Intentos Permitidos", validators=[MinValueValidator(1)])
+
+    class Meta:
+        verbose_name = "Capacitación"
+        verbose_name_plural = "Capacitaciones"
+        ordering = ['-fecha_creacion']
+        permissions = [
+            ("can_publish_capacitacion", "Puede publicar capacitaciones"),
+            ("can_create_evaluacion", "Puede crear evaluaciones"),
+        ]
+
+    def __str__(self):
+        return self.titulo
+
+
+class ProgresoCapacitacion(models.Model):
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Usuario")
+    capacitacion = models.ForeignKey(Capacitacion, on_delete=models.CASCADE, verbose_name="Capacitación")
+    completada = models.BooleanField(default=False, verbose_name="Completada")
+    fecha_inicio = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Inicio")
+    fecha_completacion = models.DateTimeField(blank=True, null=True, verbose_name="Fecha de Completación")
+    progreso_porcentaje = models.IntegerField(default=0, verbose_name="Progreso (%)", validators=[MinValueValidator(0), MaxValueValidator(100)])
+
+    class Meta:
+        verbose_name = "Progreso de Capacitación"
+        verbose_name_plural = "Progresos de Capacitaciones"
+        unique_together = ['usuario', 'capacitacion']
+        ordering = ['-fecha_inicio']
+
+    def __str__(self):
+        return f"{self.usuario.get_full_name} - {self.capacitacion.titulo}"
+
+
+class Evaluacion(models.Model):
+    TIPO_PREGUNTA = [
+        ('opcion_multiple', 'Opción Múltiple'),
+        ('verdadero_falso', 'Verdadero/Falso'),
+    ]
+
+    capacitacion = models.OneToOneField(Capacitacion, on_delete=models.CASCADE, related_name='evaluacion', verbose_name="Capacitación")
+    titulo = models.CharField(max_length=200, verbose_name="Título")
+    descripcion = models.TextField(blank=True, verbose_name="Descripción")
+    activa = models.BooleanField(default=True, verbose_name="Activa")
+    creada_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Creada por")
+    fecha_creacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Creación")
+
+    class Meta:
+        verbose_name = "Evaluación"
+        verbose_name_plural = "Evaluaciones"
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return self.titulo
+
+
+class Pregunta(models.Model):
+    evaluacion = models.ForeignKey(Evaluacion, on_delete=models.CASCADE, related_name='preguntas', verbose_name="Evaluación")
+    texto = models.TextField(verbose_name="Texto de la Pregunta")
+    tipo = models.CharField(max_length=20, choices=Evaluacion.TIPO_PREGUNTA, verbose_name="Tipo de Pregunta")
+    puntaje = models.IntegerField(default=10, verbose_name="Puntaje", validators=[MinValueValidator(1)])
+    orden = models.PositiveSmallIntegerField(default=0, verbose_name="Orden")
+
+    class Meta:
+        verbose_name = "Pregunta"
+        verbose_name_plural = "Preguntas"
+        ordering = ['orden', 'id']
+
+    def __str__(self):
+        return self.texto[:50]
+
+
+class OpcionRespuesta(models.Model):
+    pregunta = models.ForeignKey(Pregunta, on_delete=models.CASCADE, related_name='opciones', verbose_name="Pregunta")
+    texto = models.CharField(max_length=200, verbose_name="Texto de la Opción")
+    es_correcta = models.BooleanField(default=False, verbose_name="¿Es Correcta?")
+    orden = models.PositiveSmallIntegerField(default=0, verbose_name="Orden")
+
+    class Meta:
+        verbose_name = "Opción de Respuesta"
+        verbose_name_plural = "Opciones de Respuesta"
+        ordering = ['orden', 'id']
+
+    def __str__(self):
+        return f"{self.texto} ({'✔' if self.es_correcta else '✖'})"
+
+
+class IntentoEvaluacion(models.Model):
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Usuario")
+    evaluacion = models.ForeignKey(Evaluacion, on_delete=models.CASCADE, verbose_name="Evaluación")
+    fecha_intento = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Intento")
+    puntaje_obtenido = models.IntegerField(default=0, verbose_name="Puntaje Obtenido", validators=[MinValueValidator(0)])
+    aprobado = models.BooleanField(default=False, verbose_name="Aprobado")
+    numero_intento = models.IntegerField(default=1, verbose_name="Número de Intento")
+
+    class Meta:
+        verbose_name = "Intento de Evaluación"
+        verbose_name_plural = "Intentos de Evaluación"
+        ordering = ['-fecha_intento']
+
+    def __str__(self):
+        return f"{self.usuario.get_full_name} - {self.evaluacion.titulo} (Intento {self.numero_intento})"
+
+
+class RespuestaUsuario(models.Model):
+    intento = models.ForeignKey(IntentoEvaluacion, on_delete=models.CASCADE, related_name='respuestas', verbose_name="Intento")
+    pregunta = models.ForeignKey(Pregunta, on_delete=models.CASCADE, verbose_name="Pregunta")
+    opcion_seleccionada = models.ForeignKey(OpcionRespuesta, on_delete=models.CASCADE, verbose_name="Opción Seleccionada")
+
+    class Meta:
+        verbose_name = "Respuesta de Usuario"
+        verbose_name_plural = "Respuestas de Usuarios"
+
+    def __str__(self):
+        return f"Resp. {self.intento.usuario.get_full_name} - {self.pregunta.id}"
+
+
+class Certificado(models.Model):
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name="Usuario")
+    capacitacion = models.ForeignKey(Capacitacion, on_delete=models.CASCADE, verbose_name="Capacitación")
+    evaluacion = models.ForeignKey(Evaluacion, on_delete=models.CASCADE, verbose_name="Evaluación")
+    fecha_emision = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Emisión")
+    codigo_certificado = models.CharField(max_length=50, unique=True, verbose_name="Código de Certificado")
+    puntaje_final = models.IntegerField(verbose_name="Puntaje Final")
+
+    class Meta:
+        verbose_name = "Certificado"
+        verbose_name_plural = "Certificados"
+        ordering = ['-fecha_emision']
+
+    def save(self, *args, **kwargs):
+        if not self.codigo_certificado:
+            self.codigo_certificado = f"CERT-{self.usuario.id}-{self.capacitacion.id}-{uuid.uuid4().hex[:8].upper()}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Certificado {self.codigo_certificado} - {self.usuario.get_full_name}"
 
